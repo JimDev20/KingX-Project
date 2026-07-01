@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
+const websiteRoutes = require('./routes/websiteRoutes');
 
 const app = express();
 
@@ -15,13 +16,14 @@ connectDB();
 
 // Routes
 app.use('/api', authRoutes);
+app.use('/api/websites', websiteRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({ 
         status: 'ok', 
         timestamp: new Date().toISOString(),
-        port: process.env.PORT || 5000
+        port: process.env.PORT || 5005
     });
 });
 
