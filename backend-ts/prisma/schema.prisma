@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==================== USERS ====================
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  password      String
+  fullName      String
+  avatar        String?
+  role          Role          @default(USER)
+  isVerified    Boolean       @default(false)
+  teamId        String?       @map("team_id")
+  settings      Json?
+
+  // Relations
+  websites      Website[]
+  currentTeam   Team?         @relation("UserCurrentTeam", fields: [teamId], references: [id])
+  ownedTeams    Team[]        @relation("UserOwnedTeams")
+  alerts        Alert[]
+  auditLogs     AuditLog[]
+  teamMembers   TeamMember[]
+
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+// ==================== TEAMS ====================
+model Team {
+  id            String        @id @default(cuid())
+  name          String
+  slug          String        @unique
+  ownerId       String        @map("owner_id")
+  logo          String?
+  plan          Plan          @default(FREE)
+
+  // Relations
+  owner         User          @relation("UserOwnedTeams", fields: [ownerId], references: [id])
+  members       TeamMember[]
+  websites      Website[]
+  teamUsers     User[]        @relation("UserCurrentTeam")
+
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  @@map("teams")
+}
+
+// ==================== TEAM MEMBERS ====================
+model TeamMember {
+  id            String        @id @default(cuid())
+  teamId        String        @map("team_id")
+  userId        String        @map("user_id")
+  role          TeamRole      @default(MEMBER)
+
+  // Relations
+  team          Team          @relation(fields: [teamId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+
+  @@unique([teamId, userId])
+  @@map("team_members")
+}
+
+// ==================== WEBSITES ====================
+model Website {
+  id            String        @id @default(cuid())
+  userId        String?       @map("user_id")
+  teamId        String?       @map("team_id")
+  name          String
+  url           String
+  method        HttpMethod    @default(GET)
+  checkInterval Int           @default(60) @map("check_interval")
+  timeout       Int           @default(10)
+  status        WebsiteStatus @default(PENDING)
+  lastChecked   DateTime?     @map("last_checked")
+  responseTime  Int?          @map("response_time")
+  uptime        Float?        @default(100)
+  tags          String[]
+
+  // Relations
+  user          User?         @relation(fields: [userId], references: [id])
+  team          Team?         @relation(fields: [teamId], references: [id])
+  history       WebsiteHistory[]
+  alerts        Alert[]
+
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  @@map("websites")
+}
+
+// ==================== WEBSITE HISTORY ====================
+model WebsiteHistory {
+  id            String        @id @default(cuid())
+  websiteId     String        @map("website_id")
+  status        WebsiteStatus
+  responseTime  Int?          @map("response_time")
+  statusCode    Int?          @map("status_code")
+  error         String?
+  duration      Int?
+
+  // Relations
+  website       Website       @relation(fields: [websiteId], references: [id])
+
+  timestamp     DateTime      @default(now())
+
+  @@index([websiteId, timestamp])
+  @@map("website_histories")
+}
+
+// ==================== ALERTS ====================
+model Alert {
+  id            String        @id @default(cuid())
+  websiteId     String        @map("website_id")
+  userId        String        @map("user_id")
+  type          AlertType
+  severity      AlertSeverity @default(INFO)
+  status        AlertStatus   @default(PENDING)
+  message       String
+  sentAt        DateTime?     @map("sent_at")
+  deliveredAt   DateTime?     @map("delivered_at")
+
+  // Relations
+  website       Website       @relation(fields: [websiteId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  @@map("alerts")
+}
+
+// ==================== AUDIT LOGS ====================
+model AuditLog {
+  id            String        @id @default(cuid())
+  userId        String        @map("user_id")
+  action        String
+  resource      String
+  details       Json?
+  ip            String?
+  userAgent     String?       @map("user_agent")
+
+  // Relations
+  user          User          @relation(fields: [userId], references: [id])
+
+  timestamp     DateTime      @default(now())
+
+  @@map("audit_logs")
+}
+
+// ==================== ENUMS ====================
+enum Role {
+  USER
+  ADMIN
+  SUPERADMIN
+}
+
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum TeamRole {
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum HttpMethod {
+  GET
+  POST
+  HEAD
+}
+
+enum WebsiteStatus {
+  UP
+  DOWN
+  PENDING
+  MAINTENANCE
+}
+
+enum AlertType {
+  EMAIL
+  SMS
+  SLACK
+  DISCORD
+  TELEGRAM
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum AlertStatus {
+  PENDING
+  SENT
+  FAILED
+}
