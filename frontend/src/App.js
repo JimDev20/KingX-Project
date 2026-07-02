@@ -2,6 +2,9 @@ import React from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
+import WebsiteTable from './components/dashboard/WebsiteTable';
+import StatsCards from './components/dashboard/StatsCards';
+import UptimeChart from './components/dashboard/UptimeChart';
 
 function AppContent() {
     const { user, logout } = useAuth();
@@ -27,15 +30,18 @@ function AppContent() {
                     <span className="text-gray-700">Welcome, <strong>{user.username}</strong></span>
                     <button
                         onClick={logout}
-                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg"
+                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition duration-200"
                     >
                         Logout
                     </button>
                 </div>
             </nav>
             <div className="p-6 max-w-6xl mx-auto">
-                <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
-                <p className="text-gray-600">Your websites will appear here.</p>
+                <StatsCards />
+                <UptimeChart />
+                <div className="mt-6">
+                    <WebsiteTable />
+                </div>
             </div>
         </div>
     );
