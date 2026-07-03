@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPERADMIN
+}
+
+enum TeamRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum CheckMethod {
+  GET
+  POST
+  HEAD
+}
+
+enum WebsiteStatus {
+  UP
+  DOWN
+  PENDING
+  MAINTENANCE
+}
+
+enum AlertType {
+  EMAIL
+  SMS
+  SLACK
+  DISCORD
+  TELEGRAM
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum AlertStatus {
+  SENT
+  PENDING
+  FAILED
+}
+
+model User {
+  id         String       @id @default(cuid())
+  email      String       @unique
+  password   String
+  fullName   String
+  avatar     String?
+  role       UserRole     @default(USER)
+  isVerified Boolean      @default(false)
+  settings   Json?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  alerts     Alert[]
+  apiKeys    ApiKey[]
+  auditLogs  AuditLog[]
+  ownedTeams Team[]       @relation("TeamOwner")
+  memberships TeamMember[]
+  websites   Website[]
+
+  @@map("users")
+}
+
+model Team {
+  id        String       @id @default(cuid())
+  name      String
+  slug      String       @unique
+  ownerId   String
+  logo      String?
+  plan      Plan         @default(FREE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  owner     User         @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members   TeamMember[]
+  websites  Website[]
+
+  @@map("teams")
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  userId    String
+  role      TeamRole @default(MEMBER)
+  createdAt DateTime @default(now())
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@map("team_members")
+}
+
+model Website {
+  id            String           @id @default(cuid())
+  userId        String
+  teamId        String?
+  name          String
+  url           String
+  method        CheckMethod      @default(GET)
+  checkInterval Int              @default(300)
+  timeout       Int              @default(10000)
+  status        WebsiteStatus    @default(PENDING)
+  lastChecked   DateTime?
+  responseTime  Int?
+  uptime        Float            @default(100)
+  tags          String[]         @default([])
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  alerts        Alert[]
+  alertRules    AlertRule[]
+  history       WebsiteHistory[]
+  team          Team?            @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([teamId])
+  @@map("websites")
+}
+
+model WebsiteHistory {
+  id           String        @id @default(cuid())
+  websiteId    String
+  status       WebsiteStatus
+  responseTime Int?
+  statusCode   Int?
+  error        String?
+  timestamp    DateTime      @default(now())
+  duration     Int?
+  website      Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId, timestamp])
+  @@map("website_history")
+}
+
+model Alert {
+  id          String        @id @default(cuid())
+  websiteId   String
+  userId      String
+  type        AlertType
+  severity    AlertSeverity @default(INFO)
+  status      AlertStatus   @default(PENDING)
+  message     String
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  createdAt   DateTime      @default(now())
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  website     Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([websiteId])
+  @@map("alerts")
+}
+
+model AlertRule {
+  id          String    @id @default(cuid())
+  websiteId   String
+  type        AlertType @default(EMAIL)
+  recipients  String[]  @default([])
+  isEnabled   Boolean   @default(true)
+  threshold   Int       @default(1)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  website     Website   @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId])
+  @@map("alert_rules")
+}
+
+model ApiKey {
+  id        String    @id @default(cuid())
+  userId    String
+  name      String
+  keyHash   String
+  lastUsed  DateTime?
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("api_keys")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  resource  String
+  details   Json?
+  ip        String?
+  userAgent String?
+  timestamp DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, timestamp])
+  @@map("audit_logs")
+}
