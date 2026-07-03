@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Activity, AlertTriangle, Bell, CheckCircle2, Clock3, Globe2, Loader2, LogOut, Shield, Users, Settings } from 'lucide-react'
+import { Activity, AlertTriangle, Bell, CheckCircle2, Clock3, Globe2, Loader2, LogOut, Shield, Users, Settings, X } from 'lucide-react'
 import StatCard from './StatCard'
 import WebsiteForm from './WebsiteForm'
 import WebsiteTable from './WebsiteTable'
@@ -11,6 +11,7 @@ import TeamsPage from './TeamsPage'
 import SettingsPage from './SettingsPage'
 import AlertsPage from './AlertsPage'
 import AdminPage from './AdminPage'
+import LandingPage from './LandingPage'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
@@ -62,6 +63,7 @@ export default function Dashboard() {
   const [showSettings, setShowSettings] = useState(false)
   const [showAlerts, setShowAlerts] = useState(false)
   const [showAdmin, setShowAdmin] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
 
   const authHeaders = useMemo(() => ({
     Authorization: `Bearer ${token}`,
@@ -173,58 +175,22 @@ export default function Dashboard() {
 
   if (!user) {
     return (
-      <main className="min-h-screen bg-[#f8fafc] text-slate-950">
-        <section className="grid min-h-screen grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="flex flex-col justify-between bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] p-8 text-white lg:p-12">
-            <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-500 text-emerald-950">
-                <Activity className="h-6 w-6" />
-              </div>
-              <span className="text-xl font-bold tracking-tight">KingX</span>
-            </div>
+      <>
+        <LandingPage onOpenAuth={() => setShowAuthModal(true)} />
 
-            <div className="max-w-2xl py-16">
-              <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-emerald-400">
-                Uptime Monitor v2
-              </p>
-              <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-                Monitor everything.{' '}
-                <span className="bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent">
-                  Stay online.
-                </span>
-              </h1>
-              <p className="mt-6 max-w-lg text-lg leading-relaxed text-slate-300">
-                Track uptime, response time, and incidents across all your websites from a single dashboard.
-              </p>
-              <div className="mt-10 grid gap-4 sm:grid-cols-3">
-                {[
-                  ['Live Checks', 'On-demand and scheduled status checks with response time tracking.'],
-                  ['Team Workspaces', 'Collaborate with your team and manage access permissions.'],
-                  ['Instant Alerts', 'Get notified via email when your sites go down.'],
-                ].map(([title, desc]) => (
-                  <div key={title} className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition hover:bg-white/10">
-                    <p className="font-semibold text-white">{title}</p>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-400">{desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <p className="text-sm text-slate-500">
-              Open source &bull; Powered by TypeScript + PostgreSQL
-            </p>
-          </div>
-
-          <div className="flex items-center justify-center p-6">
-            <div className="w-full max-w-md">
-              <div className="mb-8 text-center">
-                <h2 className="text-2xl font-bold text-slate-900">Welcome back</h2>
-                <p className="mt-1 text-slate-500">
-                  {authMode === 'login' ? 'Sign in to your account' : 'Create a new account'}
-                </p>
+        {showAuthModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <h2 className="text-lg font-bold text-slate-900">
+                  {authMode === 'login' ? 'Welcome back' : 'Create account'}
+                </h2>
+                <button onClick={() => { setShowAuthModal(false); setMessage('') }} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
+                  <X className="h-5 w-5" />
+                </button>
               </div>
 
-              <form onSubmit={handleAuth} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="p-6">
                 <div className="mb-6 flex rounded-lg bg-slate-100 p-1">
                   {(['login', 'register'] as const).map((mode) => (
                     <button
@@ -242,62 +208,64 @@ export default function Dashboard() {
                   ))}
                 </div>
 
-                {authMode === 'register' && (
+                <form onSubmit={(e) => handleAuth(e).then(() => setShowAuthModal(false))}>
+                  {authMode === 'register' && (
+                    <label className="mb-4 block text-sm font-medium text-slate-700">
+                      Full name
+                      <input
+                        value={authForm.fullName}
+                        onChange={(e) => setAuthForm({ ...authForm, fullName: e.target.value })}
+                        className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                        autoComplete="name"
+                        placeholder="John Doe"
+                      />
+                    </label>
+                  )}
+
                   <label className="mb-4 block text-sm font-medium text-slate-700">
-                    Full name
+                    Email
                     <input
-                      value={authForm.fullName}
-                      onChange={(e) => setAuthForm({ ...authForm, fullName: e.target.value })}
+                      value={authForm.email}
+                      onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
                       className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                      autoComplete="name"
-                      placeholder="John Doe"
+                      autoComplete="email"
+                      type="email"
+                      placeholder="john@example.com"
                     />
                   </label>
-                )}
 
-                <label className="mb-4 block text-sm font-medium text-slate-700">
-                  Email
-                  <input
-                    value={authForm.email}
-                    onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
-                    className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                    autoComplete="email"
-                    type="email"
-                    placeholder="john@example.com"
-                  />
-                </label>
+                  <label className="mb-5 block text-sm font-medium text-slate-700">
+                    Password
+                    <input
+                      value={authForm.password}
+                      onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
+                      className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                      autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
+                      type="password"
+                      placeholder={authMode === 'login' ? 'Enter your password' : 'Create a password'}
+                    />
+                  </label>
 
-                <label className="mb-5 block text-sm font-medium text-slate-700">
-                  Password
-                  <input
-                    value={authForm.password}
-                    onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
-                    className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                    autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
-                    type="password"
-                    placeholder={authMode === 'login' ? 'Enter your password' : 'Create a password'}
-                  />
-                </label>
+                  {message && (
+                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                      {message}
+                    </div>
+                  )}
 
-                {message && (
-                  <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
-                    {message}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
-                >
-                  {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {authMode === 'login' ? 'Sign in' : 'Create account'}
-                </button>
-              </form>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 font-semibold text-white transition hover:from-indigo-700 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {authMode === 'login' ? 'Sign in' : 'Create account'}
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
-        </section>
-      </main>
+        )}
+      </>
     )
   }
 
