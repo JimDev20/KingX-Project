@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Activity, AlertTriangle, CheckCircle2, Clock3, Globe2, Loader2, LogOut, Users, Settings } from 'lucide-react'
+import { Activity, AlertTriangle, Bell, CheckCircle2, Clock3, Globe2, Loader2, LogOut, Users, Settings } from 'lucide-react'
 import StatCard from './StatCard'
 import WebsiteForm from './WebsiteForm'
 import WebsiteTable from './WebsiteTable'
@@ -9,6 +9,7 @@ import UptimeChart from './UptimeChart'
 import WebsiteEditModal from './WebsiteEditModal'
 import TeamsPage from './TeamsPage'
 import SettingsPage from './SettingsPage'
+import AlertsPage from './AlertsPage'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
@@ -58,6 +59,7 @@ export default function Dashboard() {
   const [editingWebsite, setEditingWebsite] = useState<Website | null>(null)
   const [showTeams, setShowTeams] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showAlerts, setShowAlerts] = useState(false)
 
   const authHeaders = useMemo(() => ({
     Authorization: `Bearer ${token}`,
@@ -313,6 +315,14 @@ export default function Dashboard() {
           <div className="flex items-center gap-2">
             <button
               type="button"
+              onClick={() => setShowAlerts(true)}
+              title="Alerts"
+              className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-600"
+            >
+              <Bell className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
               onClick={() => setShowTeams(true)}
               title="Teams"
               className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600"
@@ -400,6 +410,10 @@ export default function Dashboard() {
 
       {showSettings && (
         <SettingsPage onClose={() => setShowSettings(false)} />
+      )}
+
+      {showAlerts && (
+        <AlertsPage onClose={() => setShowAlerts(false)} />
       )}
     </main>
   )
