@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "prisma:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "render-build": "npm install && npm run prisma:generate && npm run build"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
