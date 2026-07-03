@@ -38,7 +38,7 @@ const StatsCards = () => {
 
     const totalSites = stats.totalSites || 0;
     const totalDown = stats.downSites || 0;
-    const avgUptime = stats.averageUptime || 100;
+    const avgUptime = stats.uptime || 100;
     const avgResponse = stats.averageResponseTime || 0;
 
     return (

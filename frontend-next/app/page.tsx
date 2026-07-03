@@ -304,7 +304,6 @@ export default function Home() {
               </div>
             </div>
 
-            <p className="text-sm text-slate-400">Backend API: {API_URL}</p>
           </div>
 
           <div className="flex items-center justify-center p-6">

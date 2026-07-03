@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:4000/api';
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
 
 async function apiRequest(endpoint, options = {}) {
     const token = localStorage.getItem('token');
@@ -33,7 +33,7 @@ export const getWebsites = () => {
 export const addWebsite = (url) => {
     return apiRequest('websites', {
         method: 'POST',
-        body: JSON.stringify({ name: url, url })
+        body: JSON.stringify({ name: new URL(url).hostname, url })
     });
 };
 
@@ -45,7 +45,7 @@ export const deleteWebsite = (id) => {
 
 // ==================== STATS FUNCTIONS ====================
 export const getAllStats = () => {
-    return apiRequest('websites/dashboard').then(res => res.stats);
+    return apiRequest('websites/stats');
 };
 
 export const getWebsiteHistory = (websiteId) => {

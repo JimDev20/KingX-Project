@@ -96,17 +96,17 @@ const WebsiteTable = () => {
                                     <td className="py-3 px-4">{site.name || site.url}</td>
                                     <td className="py-3 px-4">
                                                 <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ${
-                                            site.status === 'up' ? 'bg-green-100 text-green-700' :
-                                            site.status === 'down' ? 'bg-red-100 text-red-700' :
-                                            'bg-yellow-100 text-yellow-700'
+                                            site.status === 'UP' ? 'bg-green-100 text-green-700' :
+                                             site.status === 'DOWN' ? 'bg-red-100 text-red-700' :
+                                             'bg-yellow-100 text-yellow-700'
                                         }`}>
                                             <span className={`w-2 h-2 rounded-full inline-block ${
-                                                site.status === 'up' ? 'bg-green-500' :
-                                                site.status === 'down' ? 'bg-red-500' :
+                                                site.status === 'UP' ? 'bg-green-500' :
+                                                site.status === 'DOWN' ? 'bg-red-500' :
                                                 'bg-yellow-500'
                                             }`}></span>
-                                            {site.status === 'up' ? 'UP' :
-                                             site.status === 'down' ? 'DOWN' :
+                                            {site.status === 'UP' ? 'UP' :
+                                             site.status === 'DOWN' ? 'DOWN' :
                                              'Pending'}
                                         </span>
                                     </td>
