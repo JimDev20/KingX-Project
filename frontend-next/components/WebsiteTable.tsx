@@ -2,6 +2,7 @@ import {
   CheckCircle2, XCircle, Clock3, ShieldCheck,
   RefreshCcw, Trash2, Globe2, Loader2, Search, Edit3,
 } from 'lucide-react'
+import Tooltip from './Tooltip'
 
 interface Website {
   id: string
@@ -18,17 +19,17 @@ interface Website {
 }
 
 const statusStyles: Record<string, string> = {
-  up: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  down: 'border-red-200 bg-red-50 text-red-700',
-  pending: 'border-amber-200 bg-amber-50 text-amber-700',
-  maintenance: 'border-slate-200 bg-slate-50 text-slate-600',
+  UP: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  DOWN: 'border-red-200 bg-red-50 text-red-700',
+  PENDING: 'border-amber-200 bg-amber-50 text-amber-700',
+  MAINTENANCE: 'border-slate-200 bg-slate-50 text-slate-600',
 }
 
 const statusIcons: Record<string, React.ReactNode> = {
-  up: <CheckCircle2 className="h-4 w-4" />,
-  down: <XCircle className="h-4 w-4" />,
-  pending: <Clock3 className="h-4 w-4" />,
-  maintenance: <ShieldCheck className="h-4 w-4" />,
+  UP: <CheckCircle2 className="h-4 w-4" />,
+  DOWN: <XCircle className="h-4 w-4" />,
+  PENDING: <Clock3 className="h-4 w-4" />,
+  MAINTENANCE: <ShieldCheck className="h-4 w-4" />,
 }
 
 interface WebsiteTableProps {
@@ -55,7 +56,7 @@ export default function WebsiteTable({
   const filtered = websites.filter((site) => {
     const matchSearch = site.name.toLowerCase().includes(search.toLowerCase()) ||
       site.url.toLowerCase().includes(search.toLowerCase())
-    const matchStatus = statusFilter === 'all' || site.status === statusFilter
+    const matchStatus = statusFilter === 'ALL' || site.status === statusFilter
     return matchSearch && matchStatus
   })
 
@@ -81,20 +82,22 @@ export default function WebsiteTable({
             onChange={(e) => onStatusFilterChange(e.target.value)}
             className="h-10 rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
           >
-            <option value="all">All status</option>
-            <option value="up">Up</option>
-            <option value="down">Down</option>
-            <option value="pending">Pending</option>
-            <option value="maintenance">Maintenance</option>
+            <option value="ALL">All status</option>
+            <option value="UP">Up</option>
+            <option value="DOWN">Down</option>
+            <option value="PENDING">Pending</option>
+            <option value="MAINTENANCE">Maintenance</option>
           </select>
-          <button
-            type="button"
-            onClick={onRefresh}
-            title="Refresh"
-            className="grid h-10 w-10 place-items-center rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-50 hover:text-indigo-600"
-          >
-            <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          <Tooltip text="Refresh website list">
+            <button
+              type="button"
+              onClick={onRefresh}
+              title="Refresh"
+              className="grid h-10 w-10 place-items-center rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-50 hover:text-indigo-600 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
+            >
+              <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -160,33 +163,39 @@ export default function WebsiteTable({
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex justify-end gap-1">
-                    <button
-                      type="button"
-                      onClick={() => onEdit(site)}
-                      title="Edit website"
-                      className="grid h-9 w-9 place-items-center rounded-lg border border-slate-300 text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
-                    >
-                      <Edit3 className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onCheck(site.id)}
-                      title="Run check"
-                      className="grid h-9 w-9 place-items-center rounded-lg border border-slate-300 text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
-                    >
-                      {checkingId === site.id
-                        ? <Loader2 className="h-4 w-4 animate-spin" />
-                        : <RefreshCcw className="h-4 w-4" />
-                      }
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDelete(site.id)}
-                      title="Delete website"
-                      className="grid h-9 w-9 place-items-center rounded-lg border border-slate-300 text-slate-600 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <Tooltip text="Edit website settings">
+                      <button
+                        type="button"
+                        onClick={() => onEdit(site)}
+                        title="Edit website"
+                        className="grid h-9 w-9 place-items-center rounded-lg border border-slate-300 text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip text="Run an immediate health check">
+                      <button
+                        type="button"
+                        onClick={() => onCheck(site.id)}
+                        title="Run check"
+                        className="grid h-9 w-9 place-items-center rounded-lg border border-slate-300 text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-emerald-400"
+                      >
+                        {checkingId === site.id
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : <RefreshCcw className="h-4 w-4" />
+                        }
+                      </button>
+                    </Tooltip>
+                    <Tooltip text="Remove this website permanently">
+                      <button
+                        type="button"
+                        onClick={() => onDelete(site.id)}
+                        title="Delete website"
+                        className="grid h-9 w-9 place-items-center rounded-lg border border-slate-300 text-slate-600 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-red-400"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </Tooltip>
                   </div>
                 </td>
               </tr>

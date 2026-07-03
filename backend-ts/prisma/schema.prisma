@@ -67,6 +67,8 @@ model User {
   role       UserRole     @default(USER)
   isVerified Boolean      @default(false)
   settings   Json?
+  resetToken String?
+  resetExpires DateTime?
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
   alerts     Alert[]
@@ -91,6 +93,7 @@ model Team {
   owner     User         @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members   TeamMember[]
   websites  Website[]
+  maintenance MaintenanceWindow[]
 
   @@map("teams")
 }
@@ -127,6 +130,8 @@ model Website {
   alerts        Alert[]
   alertRules    AlertRule[]
   history       WebsiteHistory[]
+  incidents     Incident[]
+  maintenance   MaintenanceWindow[]
   team          Team?            @relation(fields: [teamId], references: [id], onDelete: SetNull)
   user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -211,4 +216,36 @@ model AuditLog {
 
   @@index([userId, timestamp])
   @@map("audit_logs")
+}
+
+model Incident {
+  id        String        @id @default(cuid())
+  websiteId String
+  startedAt DateTime      @default(now())
+  endedAt   DateTime?
+  status    WebsiteStatus
+  duration  Int?
+  error     String?
+  createdAt DateTime      @default(now())
+  website   Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId, startedAt])
+  @@map("incidents")
+}
+
+model MaintenanceWindow {
+  id         String   @id @default(cuid())
+  websiteId  String
+  teamId     String?
+  label      String
+  startsAt   DateTime
+  endsAt     DateTime
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  website    Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  team       Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  @@index([websiteId, startsAt])
+  @@map("maintenance_windows")
 }

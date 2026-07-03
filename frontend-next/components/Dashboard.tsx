@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Activity, AlertTriangle, Bell, CheckCircle2, Clock3, Globe2, Loader2, LogOut, Shield, Users, Settings, X } from 'lucide-react'
+import { Activity, AlertTriangle, Bell, CheckCircle2, Clock3, Globe2, Loader2, LogOut, Shield, Users, Settings, Wrench, AlertCircle, X } from 'lucide-react'
 import StatCard from './StatCard'
 import WebsiteForm from './WebsiteForm'
 import WebsiteTable from './WebsiteTable'
@@ -12,6 +12,11 @@ import SettingsPage from './SettingsPage'
 import AlertsPage from './AlertsPage'
 import AdminPage from './AdminPage'
 import LandingPage from './LandingPage'
+import Tooltip from './Tooltip'
+import ThemeProvider from './ThemeProvider'
+import MaintenancePage from './MaintenancePage'
+import IncidentsPage from './IncidentsPage'
+import ForgotPasswordModal from './ForgotPasswordModal'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
@@ -37,7 +42,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return payload as T
 }
 
-export default function Dashboard() {
+function DashboardInner() {
   const [token, setToken] = useState(() => {
     if (typeof window === 'undefined') return ''
     return localStorage.getItem('kingx_token') || ''
@@ -45,7 +50,7 @@ export default function Dashboard() {
   const [user, setUser] = useState<User | null>(() => {
     if (typeof window === 'undefined') return null
     const saved = localStorage.getItem('kingx_user')
-    return saved ? JSON.parse(saved) as User : null
+    return saved ? JSON.parse(saved) : null
   })
   const [authForm, setAuthForm] = useState({ fullName: '', email: '', password: '' })
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
@@ -64,6 +69,9 @@ export default function Dashboard() {
   const [showAlerts, setShowAlerts] = useState(false)
   const [showAdmin, setShowAdmin] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showMaintenance, setShowMaintenance] = useState(false)
+  const [showIncidents, setShowIncidents] = useState(false)
+  const [showForgotPw, setShowForgotPw] = useState(false)
 
   const authHeaders = useMemo(() => ({
     Authorization: `Bearer ${token}`,
@@ -135,7 +143,14 @@ export default function Dashboard() {
     setLoading(true)
     setMessage('')
     try {
-      await request('/websites', { method: 'POST', headers: authHeaders, body: JSON.stringify(siteForm) })
+      await request('/websites', {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({
+          ...siteForm,
+          tags: siteForm.tags.split(',').map((t) => t.trim()).filter(Boolean),
+        }),
+      })
       setSiteForm({ name: '', url: '', method: 'GET', tags: '' })
       await loadDashboard()
     } catch (err) {
@@ -159,20 +174,18 @@ export default function Dashboard() {
   }
 
   const handleDeleteWebsite = async (id: string) => {
-    setLoading(true)
+    if (!window.confirm('Delete this website?')) return
     setMessage('')
     try {
       await request(`/websites/${id}`, { method: 'DELETE', headers: authHeaders })
       await loadDashboard()
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Delete failed')
-    } finally {
-      setLoading(false)
     }
   }
 
   const handleSiteFormChange = (field: string, value: string) => {
-    setSiteForm(prev => ({ ...prev, [field]: value }))
+    setSiteForm((prev) => ({ ...prev, [field]: value }))
   }
 
   if (!user) {
@@ -182,18 +195,18 @@ export default function Dashboard() {
 
         {showAuthModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
-              <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-                <h2 className="text-lg font-bold text-slate-900">
+            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+              <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                   {authMode === 'login' ? 'Welcome back' : 'Create account'}
                 </h2>
-                <button onClick={() => { setShowAuthModal(false); setMessage('') }} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
+                <button onClick={() => { setShowAuthModal(false); setShowForgotPw(false); setMessage('') }} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800">
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
               <div className="p-6">
-                <div className="mb-6 flex rounded-lg bg-slate-100 p-1">
+                <div className="mb-6 flex rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
                   {(['login', 'register'] as const).map((mode) => (
                     <button
                       key={mode}
@@ -201,8 +214,8 @@ export default function Dashboard() {
                       onClick={() => { setAuthMode(mode); setMessage('') }}
                       className={`h-10 flex-1 rounded-md text-sm font-semibold capitalize transition-all ${
                         authMode === mode
-                          ? 'bg-white text-slate-900 shadow-sm'
-                          : 'text-slate-500 hover:text-slate-800'
+                          ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white'
+                          : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
                       }`}
                     >
                       {mode}
@@ -212,36 +225,36 @@ export default function Dashboard() {
 
                 <form onSubmit={async (e) => { const ok = await handleAuth(e); if (ok) setShowAuthModal(false) }}>
                   {authMode === 'register' && (
-                    <label className="mb-4 block text-sm font-medium text-slate-700">
+                    <label className="mb-4 block text-sm font-medium text-slate-700 dark:text-slate-300">
                       Full name
                       <input
                         value={authForm.fullName}
                         onChange={(e) => setAuthForm({ ...authForm, fullName: e.target.value })}
-                        className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                        className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
                         autoComplete="name"
                         placeholder="John Doe"
                       />
                     </label>
                   )}
 
-                  <label className="mb-4 block text-sm font-medium text-slate-700">
+                  <label className="mb-4 block text-sm font-medium text-slate-700 dark:text-slate-300">
                     Email
                     <input
                       value={authForm.email}
                       onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
-                      className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                      className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
                       autoComplete="email"
                       type="email"
                       placeholder="john@example.com"
                     />
                   </label>
 
-                  <label className="mb-5 block text-sm font-medium text-slate-700">
+                  <label className="mb-5 block text-sm font-medium text-slate-700 dark:text-slate-300">
                     Password
                     <input
                       value={authForm.password}
                       onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
-                      className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                      className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
                       autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
                       type="password"
                       placeholder={authMode === 'login' ? 'Enter your password' : 'Create a password'}
@@ -249,84 +262,102 @@ export default function Dashboard() {
                   </label>
 
                   {message && (
-                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400">
                       {message}
                     </div>
                   )}
 
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 font-semibold text-white transition hover:from-indigo-700 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {authMode === 'login' ? 'Sign in' : 'Create account'}
-                  </button>
+                  {authMode === 'login' && (
+                    <button type="button" onClick={() => { setShowForgotPw(true); setMessage('') }}
+                      className="mb-4 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
+                      Forgot password?
+                    </button>
+                  )}
+
+                  <Tooltip text={authMode === 'login' ? 'Sign in to your account' : 'Create a new account'}>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 font-semibold text-white transition hover:from-indigo-700 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {authMode === 'login' ? 'Sign in' : 'Create account'}
+                    </button>
+                  </Tooltip>
                 </form>
               </div>
             </div>
           </div>
+        )}
+
+        {showForgotPw && (
+          <ForgotPasswordModal
+            onClose={() => setShowForgotPw(false)}
+            onSwitchToLogin={() => { setAuthMode('login'); setShowForgotPw(false) }}
+          />
         )}
       </>
     )
   }
 
   return (
-    <main className="min-h-screen bg-[#f8fafc]">
-      <header className="border-b border-slate-200 bg-white">
+    <main className="min-h-screen bg-[#f8fafc] dark:bg-slate-950">
+      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-lg dark:border-slate-800 dark:bg-slate-900/80">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[#0f172a] to-[#1e293b] text-emerald-400">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg">
               <Activity className="h-6 w-6" />
             </div>
             <div className="min-w-0">
-              <p className="text-lg font-bold text-slate-900">KingX Monitor</p>
-              <p className="truncate text-sm text-slate-500">{user.email}</p>
+              <p className="text-lg font-bold text-slate-900 dark:text-white">KingX Monitor</p>
+              <p className="truncate text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowAlerts(true)}
-              title="Alerts"
-              className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-600"
-            >
-              <Bell className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowTeams(true)}
-              title="Teams"
-              className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600"
-            >
-              <Users className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowSettings(true)}
-              title="Settings"
-              className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600"
-            >
-              <Settings className="h-5 w-5" />
-            </button>
-            {user.role === 'SUPERADMIN' && (
-              <button
-                type="button"
-                onClick={() => setShowAdmin(true)}
-                title="Admin"
-                className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-purple-200 hover:bg-purple-50 hover:text-purple-600"
-              >
-                <Shield className="h-5 w-5" />
+            <Tooltip text="View and manage alert rules and history">
+              <button type="button" onClick={() => setShowAlerts(true)} title="Alerts"
+                className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-amber-800 dark:hover:bg-amber-900/20 dark:hover:text-amber-400">
+                <Bell className="h-5 w-5" />
               </button>
+            </Tooltip>
+            <Tooltip text="Schedule maintenance windows to suppress alerts">
+              <button type="button" onClick={() => setShowMaintenance(true)} title="Maintenance"
+                className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-blue-800 dark:hover:bg-blue-900/20 dark:hover:text-blue-400">
+                <Wrench className="h-5 w-5" />
+              </button>
+            </Tooltip>
+            <Tooltip text="View incident history and downtime events">
+              <button type="button" onClick={() => setShowIncidents(true)} title="Incidents"
+                className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-red-800 dark:hover:bg-red-900/20 dark:hover:text-red-400">
+                <AlertCircle className="h-5 w-5" />
+              </button>
+            </Tooltip>
+            <Tooltip text="Manage your team and invite members">
+              <button type="button" onClick={() => setShowTeams(true)} title="Teams"
+                className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-indigo-800 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400">
+                <Users className="h-5 w-5" />
+              </button>
+            </Tooltip>
+            <Tooltip text="Account settings and API keys">
+              <button type="button" onClick={() => setShowSettings(true)} title="Settings"
+                className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-indigo-800 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400">
+                <Settings className="h-5 w-5" />
+              </button>
+            </Tooltip>
+            {user.role === 'superadmin' && (
+              <Tooltip text="Admin panel — manage users and system stats">
+                <button type="button" onClick={() => setShowAdmin(true)} title="Admin"
+                  className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-purple-200 hover:bg-purple-50 hover:text-purple-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-purple-800 dark:hover:bg-purple-900/20 dark:hover:text-purple-400">
+                  <Shield className="h-5 w-5" />
+                </button>
+              </Tooltip>
             )}
-            <button
-              type="button"
-              onClick={handleLogout}
-              title="Sign out"
-              className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-            >
-              <LogOut className="h-5 w-5" />
-            </button>
+            <Tooltip text="Sign out of your account">
+              <button type="button" onClick={handleLogout} title="Sign out"
+                className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-red-800 dark:hover:bg-red-900/20 dark:hover:text-red-400">
+                <LogOut className="h-5 w-5" />
+              </button>
+            </Tooltip>
           </div>
         </div>
       </header>
@@ -343,10 +374,10 @@ export default function Dashboard() {
 
         <section className="min-w-0 space-y-6">
           <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-            <StatCard icon={<Globe2 className="h-5 w-5" />} label="Total Sites" value={stats.totalSites} tone="indigo" />
-            <StatCard icon={<CheckCircle2 className="h-5 w-5" />} label="Uptime" value={`${stats.uptime}%`} tone="emerald" />
-            <StatCard icon={<AlertTriangle className="h-5 w-5" />} label="Down" value={stats.downSites} tone="red" />
-            <StatCard icon={<Clock3 className="h-5 w-5" />} label="Avg Response" value={`${stats.averageResponseTime}ms`} tone="amber" />
+            <StatCard icon={<Tooltip text="Total number of monitored websites"><Globe2 className="h-5 w-5" /></Tooltip>} label="Total Sites" value={stats.totalSites} tone="indigo" />
+            <StatCard icon={<Tooltip text="Overall uptime percentage across all sites"><CheckCircle2 className="h-5 w-5" /></Tooltip>} label="Uptime" value={`${stats.uptime}%`} tone="emerald" />
+            <StatCard icon={<Tooltip text="Websites currently down"><AlertTriangle className="h-5 w-5" /></Tooltip>} label="Down" value={stats.downSites} tone="red" />
+            <StatCard icon={<Tooltip text="Average response time across all checks"><Clock3 className="h-5 w-5" /></Tooltip>} label="Avg Response" value={`${stats.averageResponseTime}ms`} tone="amber" />
           </div>
 
           <WebsiteTable
@@ -401,6 +432,22 @@ export default function Dashboard() {
       {showAdmin && (
         <AdminPage onClose={() => setShowAdmin(false)} />
       )}
+
+      {showMaintenance && (
+        <MaintenancePage onClose={() => setShowMaintenance(false)} />
+      )}
+
+      {showIncidents && (
+        <IncidentsPage onClose={() => setShowIncidents(false)} />
+      )}
     </main>
+  )
+}
+
+export default function Dashboard() {
+  return (
+    <ThemeProvider>
+      <DashboardInner />
+    </ThemeProvider>
   )
 }

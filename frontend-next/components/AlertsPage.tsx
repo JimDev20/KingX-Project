@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Bell, BellOff, Plus, X, Loader2, Trash2, Mail } from 'lucide-react'
+import Tooltip from './Tooltip'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
@@ -174,6 +175,7 @@ export default function AlertsPage({ onClose }: Props) {
                     <option value="SLACK">Slack</option>
                     <option value="DISCORD">Discord</option>
                   </select>
+                  <p className="text-xs text-slate-500">For SMS alerts, use the format: phonenumber@carrier (e.g. 15551234567@vtext.com)</p>
                   <input
                     value={form.recipients}
                     onChange={(e) => setForm({ ...form, recipients: e.target.value })}
@@ -188,9 +190,11 @@ export default function AlertsPage({ onClose }: Props) {
                     min="1"
                     placeholder="Threshold (consecutive failures)"
                   />
-                  <button type="submit" className="h-10 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700">
-                    Create Rule
-                  </button>
+                  <Tooltip text="Create a new alert rule">
+                    <button type="submit" className="h-10 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700">
+                      Create Rule
+                    </button>
+                  </Tooltip>
                 </form>
               )}
 
@@ -216,22 +220,26 @@ export default function AlertsPage({ onClose }: Props) {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => handleToggleRule(rule)}
-                        className={`grid h-9 w-9 place-items-center rounded-lg border transition ${
-                          rule.isEnabled
-                            ? 'border-amber-200 text-amber-600 hover:bg-amber-50'
-                            : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'
-                        }`}
-                      >
-                        {rule.isEnabled ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteRule(rule.id)}
-                        className="grid h-9 w-9 place-items-center rounded-lg border border-red-200 text-red-600 transition hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <Tooltip text={rule.isEnabled ? 'Disable this alert rule' : 'Enable this alert rule'}>
+                        <button
+                          onClick={() => handleToggleRule(rule)}
+                          className={`grid h-9 w-9 place-items-center rounded-lg border transition ${
+                            rule.isEnabled
+                              ? 'border-amber-200 text-amber-600 hover:bg-amber-50'
+                              : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'
+                          }`}
+                        >
+                          {rule.isEnabled ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                        </button>
+                      </Tooltip>
+                      <Tooltip text="Delete this alert rule">
+                        <button
+                          onClick={() => handleDeleteRule(rule.id)}
+                          className="grid h-9 w-9 place-items-center rounded-lg border border-red-200 text-red-600 transition hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </Tooltip>
                     </div>
                   </div>
                 ))

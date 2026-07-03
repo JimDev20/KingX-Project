@@ -8,7 +8,7 @@ let intervalId: ReturnType<typeof setInterval> | null = null
 async function checkAllWebsites() {
   try {
     const websites = await prisma.website.findMany({
-      where: { status: { not: 'maintenance' } },
+      where: { status: { not: 'MAINTENANCE' } },
     })
 
     for (const site of websites) {
@@ -48,7 +48,7 @@ async function checkAllWebsites() {
 async function calculateUptime(websiteId: string): Promise<number> {
   const [total, up] = await Promise.all([
     prisma.websiteHistory.count({ where: { websiteId } }),
-    prisma.websiteHistory.count({ where: { websiteId, status: 'up' } }),
+    prisma.websiteHistory.count({ where: { websiteId, status: 'UP' } }),
   ])
   if (total === 0) return 100
   return Number(((up / total) * 100).toFixed(2))

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { X, Loader2, Save } from 'lucide-react'
+import Tooltip from './Tooltip'
 
 interface WebsiteData {
   id: string
@@ -152,14 +153,16 @@ export default function WebsiteEditModal({ website, onClose, onSaved }: Props) {
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save changes
-          </button>
+          <Tooltip text="Save changes to this website">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save changes
+            </button>
+          </Tooltip>
         </form>
       </div>
     </div>

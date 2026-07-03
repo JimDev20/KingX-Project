@@ -6,7 +6,7 @@ import {
 
 interface HistoryEntry {
   id: string
-  status: 'up' | 'down' | 'pending'
+  status: 'UP' | 'DOWN' | 'PENDING'
   responseTime: number | null
   statusCode: number | null
   timestamp: string
@@ -45,8 +45,8 @@ export default function UptimeChart({ websiteId, websiteName, onClose }: Props) 
     return () => { cancelled = true }
   }, [websiteId])
 
-  const upCount = history.filter((h) => h.status === 'up').length
-  const downCount = history.filter((h) => h.status === 'down').length
+  const upCount = history.filter((h) => h.status === 'UP').length
+  const downCount = history.filter((h) => h.status === 'DOWN').length
   const uptime = history.length > 0 ? ((upCount / history.length) * 100).toFixed(1) : '100.0'
   const trend = upCount >= downCount ? 'up' : 'down'
 
@@ -146,7 +146,7 @@ export default function UptimeChart({ websiteId, websiteName, onClose }: Props) 
                           {new Date(entry.timestamp).toLocaleString()}
                         </td>
                         <td className="py-2 pr-4">
-                          <span className={`font-semibold ${entry.status === 'up' ? 'text-emerald-600' : 'text-red-600'}`}>
+                          <span className={`font-semibold ${entry.status === 'UP' ? 'text-emerald-600' : 'text-red-600'}`}>
                             {entry.status}
                           </span>
                         </td>

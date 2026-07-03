@@ -1,5 +1,5 @@
 import { Response } from 'express'
-import { Prisma, TeamMemberRole } from '@prisma/client'
+import { Prisma, TeamRole } from '@prisma/client'
 import prisma from '../config/prisma'
 import { AuthRequest } from '../middleware/auth'
 
@@ -17,9 +17,9 @@ const getRouteId = (value: string | string[] | undefined): string => {
   return Array.isArray(value) ? value[0] : value || ''
 }
 
-const parseRole = (value: unknown): TeamMemberRole => {
-  if (value === 'admin' || value === 'viewer') return value as TeamMemberRole
-  return 'member'
+const parseRole = (value: unknown): TeamRole => {
+  if (value === 'ADMIN' || value === 'VIEWER') return value as TeamRole
+  return 'MEMBER'
 }
 
 const getMembership = async (teamId: string, userId: string) => {
@@ -38,7 +38,7 @@ const requireTeamAdmin = async (teamId: string, userId: string) => {
     getMembership(teamId, userId),
     prisma.team.findUnique({ where: { id: teamId }, select: { ownerId: true } }),
   ])
-  return team?.ownerId === userId || membership?.role === 'admin'
+  return team?.ownerId === userId || membership?.role === 'ADMIN'
 }
 
 const teamInclude = {
@@ -112,7 +112,7 @@ export const createTeam = async (req: AuthRequest, res: Response): Promise<void>
         members: {
           create: {
             userId: req.userId!,
-            role: 'admin',
+            role: 'ADMIN',
           },
         },
       },

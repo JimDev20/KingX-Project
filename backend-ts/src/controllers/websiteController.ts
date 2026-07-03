@@ -1,5 +1,5 @@
 import { Response } from 'express'
-import { WebsiteMethod, WebsiteStatus, Prisma } from '@prisma/client'
+import { CheckMethod, WebsiteStatus, Prisma } from '@prisma/client'
 import prisma from '../config/prisma'
 import { AuthRequest } from '../middleware/auth'
 import { checkWebsite } from '../services/monitorService'
@@ -19,8 +19,8 @@ const normalizeUrl = (value: unknown): string | null => {
   }
 }
 
-const parseMethod = (value: unknown): WebsiteMethod => {
-  if (value === 'POST' || value === 'HEAD') return value as WebsiteMethod
+const parseMethod = (value: unknown): CheckMethod => {
+  if (value === 'POST' || value === 'HEAD') return value as CheckMethod
   return 'GET'
 }
 
@@ -41,7 +41,7 @@ const getRouteId = (value: string | string[] | undefined): string => {
 const calculateUptime = async (websiteId: string): Promise<number> => {
   const [total, up] = await Promise.all([
     prisma.websiteHistory.count({ where: { websiteId } }),
-    prisma.websiteHistory.count({ where: { websiteId, status: 'up' } }),
+    prisma.websiteHistory.count({ where: { websiteId, status: 'UP' } }),
   ])
 
   if (total === 0) return 100
@@ -80,7 +80,7 @@ export const listWebsites = async (req: AuthRequest, res: Response): Promise<voi
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : ''
     const status = typeof req.query.status === 'string' ? req.query.status.toLowerCase() : ''
 
-    const validStatuses: WebsiteStatus[] = ['up', 'down', 'pending', 'maintenance']
+    const validStatuses: WebsiteStatus[] = ['UP', 'DOWN', 'PENDING', 'MAINTENANCE']
 
     const where: Prisma.WebsiteWhereInput = {
       ...websiteAccessWhere(userId),
@@ -306,9 +306,9 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
     const userId = req.userId!
     const [totalSites, upSites, downSites, pendingSites, responseAggregate] = await Promise.all([
       prisma.website.count({ where: websiteAccessWhere(userId) }),
-      prisma.website.count({ where: { ...websiteAccessWhere(userId), status: 'up' } }),
-      prisma.website.count({ where: { ...websiteAccessWhere(userId), status: 'down' } }),
-      prisma.website.count({ where: { ...websiteAccessWhere(userId), status: 'pending' } }),
+      prisma.website.count({ where: { ...websiteAccessWhere(userId), status: 'UP' } }),
+      prisma.website.count({ where: { ...websiteAccessWhere(userId), status: 'DOWN' } }),
+      prisma.website.count({ where: { ...websiteAccessWhere(userId), status: 'PENDING' } }),
       prisma.website.aggregate({
         where: {
           ...websiteAccessWhere(userId),

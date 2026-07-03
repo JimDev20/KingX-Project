@@ -7,6 +7,10 @@ import teamRoutes from './routes/teamRoutes'
 import websiteRoutes from './routes/websiteRoutes'
 import alertRoutes from './routes/alertRoutes'
 import adminRoutes from './routes/adminRoutes'
+import maintenanceRoutes from './routes/maintenanceRoutes'
+import incidentRoutes from './routes/incidentRoutes'
+import settingsRoutes from './routes/settingsRoutes'
+import publicRoutes from './routes/publicRoutes'
 import { startMonitoring } from './services/scheduler'
 
 const app = express()
@@ -24,6 +28,10 @@ app.use('/api/teams', teamRoutes)
 app.use('/api/websites', websiteRoutes)
 app.use('/api/alerts', alertRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/maintenance', maintenanceRoutes)
+app.use('/api/incidents', incidentRoutes)
+app.use('/api/settings', settingsRoutes)
+app.use('/api/public', publicRoutes)
 
 app.get('/api/health', async (req, res) => {
   try {

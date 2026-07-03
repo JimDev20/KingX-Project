@@ -1,5 +1,6 @@
 import { Plus, Loader2 } from 'lucide-react'
 import type { FormEvent } from 'react'
+import Tooltip from './Tooltip'
 
 interface WebsiteFormProps {
   siteForm: { name: string; url: string; method: string; tags: string }
@@ -60,14 +61,16 @@ export default function WebsiteForm({ siteForm, loading, onSubmit, onChange }: W
         />
       </label>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
-      >
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-        Add site
-      </button>
+      <Tooltip text="Add a new website to monitor">
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          Add site
+        </button>
+      </Tooltip>
     </form>
   )
 }

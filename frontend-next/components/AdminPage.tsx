@@ -164,11 +164,11 @@ export default function AdminPage({ onClose }: Props) {
                           <td className="px-4 py-3 text-slate-600">{u.email}</td>
                           <td className="px-4 py-3">
                             <span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${
-                              u.role === 'superadmin' ? 'bg-purple-100 text-purple-700' :
-                              u.role === 'admin' ? 'bg-indigo-100 text-indigo-700' :
+                              u.role === 'SUPERADMIN' ? 'bg-purple-100 text-purple-700' :
+                              u.role === 'ADMIN' ? 'bg-indigo-100 text-indigo-700' :
                               'bg-slate-100 text-slate-600'
                             }`}>
-                              {u.role === 'superadmin' ? 'SUPERADMIN' : u.role === 'admin' ? 'ADMIN' : 'USER'}
+                              {u.role}
                             </span>
                           </td>
                           <td className="px-4 py-3">
@@ -183,15 +183,25 @@ export default function AdminPage({ onClose }: Props) {
                               onChange={(e) => handleRoleChange(u.id, e.target.value)}
                               className="h-8 rounded-lg border border-slate-300 px-2 text-xs outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                             >
-                              <option value="user">USER</option>
-                              <option value="admin">ADMIN</option>
-                              <option value="superadmin">SUPERADMIN</option>
+                              <option value="USER">USER</option>
+                              <option value="ADMIN">ADMIN</option>
+                              <option value="SUPERADMIN">SUPERADMIN</option>
                             </select>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-indigo-600" />
+                  <h3 className="font-semibold text-slate-900">Recent Activity</h3>
+                </div>
+                <div className="rounded-xl border border-slate-200 p-6 text-center text-sm text-slate-500">
+                  Audit logging is available in the activity log.
                 </div>
               </div>
             </>
