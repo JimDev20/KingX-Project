@@ -9,7 +9,7 @@ const StatsCards = () => {
         try {
             setLoading(true);
             const data = await getAllStats();
-            setStats(data);
+            setStats(data || {});
         } catch (err) {
             console.error('Error loading stats:', err);
         } finally {
@@ -36,15 +36,10 @@ const StatsCards = () => {
         );
     }
 
-    const urls = Object.keys(stats);
-    const totalSites = urls.length;
-    const totalDown = urls.filter(url => stats[url]?.status === 'down').length;
-    const avgUptime = urls.length > 0 
-        ? Math.round(urls.reduce((sum, url) => sum + (stats[url]?.uptime || 0), 0) / urls.length * 10) / 10
-        : 100;
-    const avgResponse = urls.length > 0
-        ? Math.round(urls.reduce((sum, url) => sum + (stats[url]?.avgResponseTime || 0), 0) / urls.length)
-        : 0;
+    const totalSites = stats.totalSites || 0;
+    const totalDown = stats.downSites || 0;
+    const avgUptime = stats.averageUptime || 100;
+    const avgResponse = stats.averageResponseTime || 0;
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

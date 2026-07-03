@@ -27,7 +27,7 @@ function AppContent() {
             <nav className="bg-white shadow-md px-6 py-3 flex justify-between items-center">
                 <h1 className="text-xl font-bold text-blue-600">🚀 KingX Uptime Monitor</h1>
                 <div className="flex items-center gap-4">
-                    <span className="text-gray-700">Welcome, <strong>{user.username}</strong></span>
+                    <span className="text-gray-700">Welcome, <strong>{user.fullName || user.email}</strong></span>
                     <button
                         onClick={logout}
                         className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition duration-200"

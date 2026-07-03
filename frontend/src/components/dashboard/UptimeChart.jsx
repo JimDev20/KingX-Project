@@ -13,7 +13,7 @@ const UptimeChart = () => {
         try {
             setLoading(true);
             const data = await getAllStats();
-            setStats(data);
+            setStats(data || {});
         } catch (err) {
             console.error('Error loading stats:', err);
         } finally {
@@ -31,8 +31,8 @@ const UptimeChart = () => {
         return <div className="bg-white rounded-lg shadow p-6 animate-pulse">Loading charts...</div>;
     }
 
-    const urls = Object.keys(stats);
-    if (urls.length === 0) {
+    const totalSites = stats.totalSites || 0;
+    if (totalSites === 0) {
         return (
             <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
                 No data available. Add a website to see charts.
@@ -40,8 +40,7 @@ const UptimeChart = () => {
         );
     }
 
-    const uptimeValues = urls.map(url => stats[url]?.uptime || 0);
-    const avgUptime = Math.round(uptimeValues.reduce((a, b) => a + b, 0) / urls.length * 10) / 10;
+    const avgUptime = parseFloat(stats.averageUptime || '100');
 
     const pieData = {
         labels: ['UP', 'DOWN'],
@@ -69,13 +68,11 @@ const UptimeChart = () => {
                         </div>
                         <div>
                             <p className="text-sm text-gray-500">Total Sites</p>
-                            <p className="text-xl font-bold text-gray-800">{urls.length}</p>
+                            <p className="text-xl font-bold text-gray-800">{totalSites}</p>
                         </div>
                         <div>
-                            <p className="text-sm text-gray-500">Sites with Data</p>
-                            <p className="text-xl font-bold text-gray-800">
-                                {urls.filter(url => stats[url]?.totalChecks > 0).length}
-                            </p>
+                            <p className="text-sm text-gray-500">Sites Up</p>
+                            <p className="text-xl font-bold text-gray-800">{stats.upSites || 0}</p>
                         </div>
                     </div>
                 </div>

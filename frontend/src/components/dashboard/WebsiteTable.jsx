@@ -11,7 +11,7 @@ const WebsiteTable = () => {
         try {
             setLoading(true);
             const data = await getWebsites();
-            setWebsites(data);
+            setWebsites(data || []);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -37,11 +37,10 @@ const WebsiteTable = () => {
         }
     };
 
-    const handleDelete = async (urlToDelete) => {
-        // ✅ FIXED: Gamitin ang window.confirm
-        if (!window.confirm(`Delete ${urlToDelete}?`)) return;
+    const handleDelete = async (id, name) => {
+        if (!window.confirm(`Delete ${name}?`)) return;
         try {
-            await deleteWebsite(urlToDelete);
+            await deleteWebsite(id);
             await loadWebsites();
         } catch (err) {
             setError(err.message);
@@ -93,17 +92,22 @@ const WebsiteTable = () => {
                         </thead>
                         <tbody>
                             {websites.map((site) => (
-                                <tr key={site.url} className="border-t border-gray-200">
-                                    <td className="py-3 px-4">{site.url}</td>
+                                <tr key={site.id || site.url} className="border-t border-gray-200">
+                                    <td className="py-3 px-4">{site.name || site.url}</td>
                                     <td className="py-3 px-4">
-                                        <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                                                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ${
                                             site.status === 'up' ? 'bg-green-100 text-green-700' :
                                             site.status === 'down' ? 'bg-red-100 text-red-700' :
                                             'bg-yellow-100 text-yellow-700'
                                         }`}>
-                                            {site.status === 'up' ? '✅ UP' :
-                                             site.status === 'down' ? '❌ DOWN' :
-                                             '⏳ Pending'}
+                                            <span className={`w-2 h-2 rounded-full inline-block ${
+                                                site.status === 'up' ? 'bg-green-500' :
+                                                site.status === 'down' ? 'bg-red-500' :
+                                                'bg-yellow-500'
+                                            }`}></span>
+                                            {site.status === 'up' ? 'UP' :
+                                             site.status === 'down' ? 'DOWN' :
+                                             'Pending'}
                                         </span>
                                     </td>
                                     <td className="py-3 px-4 text-gray-500">
@@ -111,7 +115,7 @@ const WebsiteTable = () => {
                                     </td>
                                     <td className="py-3 px-4">
                                         <button
-                                            onClick={() => handleDelete(site.url)}
+                                            onClick={() => handleDelete(site.id, site.name || site.url)}
                                             className="text-red-600 hover:text-red-800 font-medium"
                                         >
                                             Delete

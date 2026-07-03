@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
 const Register = ({ onSwitch }) => {
-    const [username, setUsername] = useState('');
+    const [fullName, setFullName] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [email, setEmail] = useState('');
@@ -18,7 +18,7 @@ const Register = ({ onSwitch }) => {
             return;
         }
 
-        const result = await register(username, password, email);
+        const result = await register(email, password, fullName);
         if (!result.success) {
             setError(result.error);
         }
@@ -37,24 +37,24 @@ const Register = ({ onSwitch }) => {
                         </div>
                     )}
                     <div className="mb-4">
-                        <label className="block text-gray-700 font-medium mb-2">Username</label>
+                        <label className="block text-gray-700 font-medium mb-2">Full Name</label>
                         <input
                             type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Choose a username"
-                            required
+                            placeholder="Enter your full name"
                         />
                     </div>
                     <div className="mb-4">
-                        <label className="block text-gray-700 font-medium mb-2">Email (Optional)</label>
+                        <label className="block text-gray-700 font-medium mb-2">Email</label>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Enter your email"
+                            required
                         />
                     </div>
                     <div className="mb-4">
