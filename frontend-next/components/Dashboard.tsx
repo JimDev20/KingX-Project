@@ -96,7 +96,7 @@ export default function Dashboard() {
     }
   }, [loadDashboard, token])
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent): Promise<boolean> => {
     e.preventDefault()
     setLoading(true)
     setMessage('')
@@ -112,8 +112,10 @@ export default function Dashboard() {
       setToken(res.token)
       setUser(res.user)
       setAuthForm({ fullName: '', email: '', password: '' })
+      return true
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Authentication failed')
+      return false
     } finally {
       setLoading(false)
     }
@@ -208,7 +210,7 @@ export default function Dashboard() {
                   ))}
                 </div>
 
-                <form onSubmit={(e) => handleAuth(e).then(() => setShowAuthModal(false))}>
+                <form onSubmit={async (e) => { const ok = await handleAuth(e); if (ok) setShowAuthModal(false) }}>
                   {authMode === 'register' && (
                     <label className="mb-4 block text-sm font-medium text-slate-700">
                       Full name

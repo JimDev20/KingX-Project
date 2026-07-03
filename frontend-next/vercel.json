@@ -1,0 +1,5 @@
+{
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://kingx-project1.onrender.com/api"
+  }
+}
