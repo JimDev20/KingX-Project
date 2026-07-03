@@ -1,0 +1,42 @@
+import './config/env'
+import express from 'express'
+import cors from 'cors'
+import prisma from './config/prisma'
+import authRoutes from './routes/authRoutes'
+
+const app = express()
+const PORT = process.env.PORT || 8080
+const corsOrigin = process.env.CORS_ORIGIN
+
+app.use(cors({
+  origin: corsOrigin ? corsOrigin.split(',').map((origin) => origin.trim()) : true,
+  credentials: true,
+}))
+app.use(express.json())
+
+app.use('/api/auth', authRoutes)
+
+app.get('/api/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`
+
+    res.json({
+      status: 'ok',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+    })
+  } catch (error) {
+    console.error('Health check database error:', error)
+
+    res.status(503).json({
+      status: 'degraded',
+      database: 'disconnected',
+      timestamp: new Date().toISOString(),
+    })
+  }
+})
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`)
+  console.log(`Health check: http://localhost:${PORT}/api/health`)
+})
