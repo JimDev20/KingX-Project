@@ -5,6 +5,7 @@ import prisma from './config/prisma'
 import authRoutes from './routes/authRoutes'
 import teamRoutes from './routes/teamRoutes'
 import websiteRoutes from './routes/websiteRoutes'
+import { startMonitoring } from './services/scheduler'
 
 const app = express()
 const PORT = process.env.PORT || 8080
@@ -43,4 +44,5 @@ app.get('/api/health', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
   console.log(`Health check: http://localhost:${PORT}/api/health`)
+  startMonitoring()
 })
