@@ -1,6 +1,6 @@
 import {
   CheckCircle2, XCircle, Clock3, ShieldCheck,
-  RefreshCcw, Trash2, Globe2, Loader2, Search,
+  RefreshCcw, Trash2, Globe2, Loader2, Search, Edit3,
 } from 'lucide-react'
 
 interface Website {
@@ -40,12 +40,14 @@ interface WebsiteTableProps {
   onRefresh: () => void
   onCheck: (id: string) => void
   onDelete: (id: string) => void
+  onEdit: (site: Website) => void
+  onViewHistory: (id: string) => void
 }
 
 export default function WebsiteTable({
   websites, search, statusFilter, checkingId, loading, message,
   onSearchChange, onStatusFilterChange, onRefresh,
-  onCheck, onDelete,
+  onCheck, onDelete, onEdit, onViewHistory,
 }: WebsiteTableProps) {
   const filtered = websites.filter((site) => {
     const matchSearch = site.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -115,7 +117,13 @@ export default function WebsiteTable({
             {filtered.map((site) => (
               <tr key={site.id} className="transition hover:bg-slate-50">
                 <td className="px-5 py-4">
-                  <div className="font-semibold text-slate-900">{site.name}</div>
+                  <button
+                    type="button"
+                    onClick={() => onViewHistory(site.id)}
+                    className="font-semibold text-slate-900 transition hover:text-indigo-600"
+                  >
+                    {site.name}
+                  </button>
                   <a
                     className="text-slate-500 transition hover:text-indigo-600"
                     href={site.url}
@@ -148,7 +156,15 @@ export default function WebsiteTable({
                   {site.lastChecked ? new Date(site.lastChecked).toLocaleString() : 'Not checked'}
                 </td>
                 <td className="px-5 py-4">
-                  <div className="flex justify-end gap-2">
+                  <div className="flex justify-end gap-1">
+                    <button
+                      type="button"
+                      onClick={() => onEdit(site)}
+                      title="Edit website"
+                      className="grid h-9 w-9 place-items-center rounded-lg border border-slate-300 text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => onCheck(site.id)}

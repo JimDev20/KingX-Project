@@ -5,6 +5,8 @@ import { Activity, AlertTriangle, CheckCircle2, Clock3, Globe2, Loader2, LogOut 
 import StatCard from './StatCard'
 import WebsiteForm from './WebsiteForm'
 import WebsiteTable from './WebsiteTable'
+import UptimeChart from './UptimeChart'
+import WebsiteEditModal from './WebsiteEditModal'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
@@ -50,6 +52,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false)
   const [checkingId, setCheckingId] = useState('')
   const [message, setMessage] = useState('')
+  const [selectedWebsite, setSelectedWebsite] = useState<{ id: string; name: string } | null>(null)
+  const [editingWebsite, setEditingWebsite] = useState<Website | null>(null)
 
   const authHeaders = useMemo(() => ({
     Authorization: `Bearer ${token}`,
@@ -343,9 +347,30 @@ export default function Dashboard() {
             onRefresh={() => loadDashboard()}
             onCheck={handleCheckWebsite}
             onDelete={handleDeleteWebsite}
+            onViewHistory={(id) => {
+              const site = websites.find((w) => w.id === id)
+              if (site) setSelectedWebsite({ id: site.id, name: site.name })
+            }}
+            onEdit={(site) => setEditingWebsite(site)}
           />
         </section>
       </div>
+
+      {selectedWebsite && (
+        <UptimeChart
+          websiteId={selectedWebsite.id}
+          websiteName={selectedWebsite.name}
+          onClose={() => setSelectedWebsite(null)}
+        />
+      )}
+
+      {editingWebsite && (
+        <WebsiteEditModal
+          website={editingWebsite}
+          onClose={() => setEditingWebsite(null)}
+          onSaved={() => loadDashboard()}
+        />
+      )}
     </main>
   )
 }
