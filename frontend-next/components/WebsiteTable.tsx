@@ -7,7 +7,10 @@ interface Website {
   id: string
   name: string
   url: string
-  status: 'UP' | 'DOWN' | 'PENDING' | 'MAINTENANCE'
+  method: string
+  checkInterval: number
+  timeout: number
+  status: string
   uptime: number
   responseTime: number | null
   lastChecked: string | null
@@ -15,17 +18,17 @@ interface Website {
 }
 
 const statusStyles: Record<string, string> = {
-  UP: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  DOWN: 'border-red-200 bg-red-50 text-red-700',
-  PENDING: 'border-amber-200 bg-amber-50 text-amber-700',
-  MAINTENANCE: 'border-slate-200 bg-slate-50 text-slate-600',
+  up: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  down: 'border-red-200 bg-red-50 text-red-700',
+  pending: 'border-amber-200 bg-amber-50 text-amber-700',
+  maintenance: 'border-slate-200 bg-slate-50 text-slate-600',
 }
 
 const statusIcons: Record<string, React.ReactNode> = {
-  UP: <CheckCircle2 className="h-4 w-4" />,
-  DOWN: <XCircle className="h-4 w-4" />,
-  PENDING: <Clock3 className="h-4 w-4" />,
-  MAINTENANCE: <ShieldCheck className="h-4 w-4" />,
+  up: <CheckCircle2 className="h-4 w-4" />,
+  down: <XCircle className="h-4 w-4" />,
+  pending: <Clock3 className="h-4 w-4" />,
+  maintenance: <ShieldCheck className="h-4 w-4" />,
 }
 
 interface WebsiteTableProps {
@@ -52,7 +55,7 @@ export default function WebsiteTable({
   const filtered = websites.filter((site) => {
     const matchSearch = site.name.toLowerCase().includes(search.toLowerCase()) ||
       site.url.toLowerCase().includes(search.toLowerCase())
-    const matchStatus = statusFilter === 'ALL' || site.status === statusFilter
+    const matchStatus = statusFilter === 'all' || site.status === statusFilter
     return matchSearch && matchStatus
   })
 
@@ -78,11 +81,11 @@ export default function WebsiteTable({
             onChange={(e) => onStatusFilterChange(e.target.value)}
             className="h-10 rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
           >
-            <option value="ALL">All status</option>
-            <option value="UP">Up</option>
-            <option value="DOWN">Down</option>
-            <option value="PENDING">Pending</option>
-            <option value="MAINTENANCE">Maintenance</option>
+            <option value="all">All status</option>
+            <option value="up">Up</option>
+            <option value="down">Down</option>
+            <option value="pending">Pending</option>
+            <option value="maintenance">Maintenance</option>
           </select>
           <button
             type="button"

@@ -18,7 +18,7 @@ interface User { id: string; email: string; fullName: string; role: string; isVe
 
 interface Website {
   id: string; name: string; url: string; method: string; checkInterval: number
-  timeout: number; status: 'UP' | 'DOWN' | 'PENDING' | 'MAINTENANCE'
+  timeout: number; status: string
   lastChecked: string | null; responseTime: number | null; uptime: number; tags: string[]
 }
 
