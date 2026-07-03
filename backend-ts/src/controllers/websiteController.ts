@@ -48,11 +48,26 @@ const calculateUptime = async (websiteId: string): Promise<number> => {
   return Number(((up / total) * 100).toFixed(2))
 }
 
+const websiteAccessWhere = (userId: string): Prisma.WebsiteWhereInput => ({
+  OR: [
+    { userId },
+    {
+      team: {
+        members: {
+          some: {
+            userId,
+          },
+        },
+      },
+    },
+  ],
+})
+
 const ensureWebsite = async (websiteId: string, userId: string) => {
   return prisma.website.findFirst({
     where: {
       id: websiteId,
-      userId,
+      ...websiteAccessWhere(userId),
     },
   })
 }
@@ -66,7 +81,7 @@ export const listWebsites = async (req: AuthRequest, res: Response): Promise<voi
     const status = typeof req.query.status === 'string' ? req.query.status.toUpperCase() : ''
 
     const where: Prisma.WebsiteWhereInput = {
-      userId,
+      ...websiteAccessWhere(userId),
       ...(search
         ? {
             OR: [
@@ -116,9 +131,28 @@ export const createWebsite = async (req: AuthRequest, res: Response): Promise<vo
       return
     }
 
+    const teamId = typeof req.body.teamId === 'string' ? req.body.teamId : undefined
+
+    if (teamId) {
+      const membership = await prisma.teamMember.findUnique({
+        where: {
+          teamId_userId: {
+            teamId,
+            userId,
+          },
+        },
+      })
+
+      if (!membership) {
+        res.status(403).json({ error: 'You must be a team member to add shared websites' })
+        return
+      }
+    }
+
     const website = await prisma.website.create({
       data: {
         userId,
+        teamId,
         name,
         url,
         method: parseMethod(req.body.method),
@@ -271,13 +305,13 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
   try {
     const userId = req.userId!
     const [totalSites, upSites, downSites, pendingSites, responseAggregate] = await Promise.all([
-      prisma.website.count({ where: { userId } }),
-      prisma.website.count({ where: { userId, status: WebsiteStatus.UP } }),
-      prisma.website.count({ where: { userId, status: WebsiteStatus.DOWN } }),
-      prisma.website.count({ where: { userId, status: WebsiteStatus.PENDING } }),
+      prisma.website.count({ where: websiteAccessWhere(userId) }),
+      prisma.website.count({ where: { ...websiteAccessWhere(userId), status: WebsiteStatus.UP } }),
+      prisma.website.count({ where: { ...websiteAccessWhere(userId), status: WebsiteStatus.DOWN } }),
+      prisma.website.count({ where: { ...websiteAccessWhere(userId), status: WebsiteStatus.PENDING } }),
       prisma.website.aggregate({
         where: {
-          userId,
+          ...websiteAccessWhere(userId),
           responseTime: { not: null },
         },
         _avg: { responseTime: true },
