@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: kingx-api
+    runtime: node
+    repo: https://github.com/JimDev20/KingX-Project
+    branch: master
+    rootDir: backend-ts
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: node dist/server.js
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
