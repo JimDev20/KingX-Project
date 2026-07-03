@@ -10,7 +10,7 @@ const requireSuperadmin = async (req: AuthRequest, res: Response, next: NextFunc
       select: { role: true },
     })
 
-    if (!user || user.role !== 'SUPERADMIN') {
+    if (!user || user.role !== 'superadmin') {
       res.status(403).json({ error: 'Access denied' })
       return
     }

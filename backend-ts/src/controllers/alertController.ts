@@ -32,7 +32,7 @@ export const listAlerts = async (req: AuthRequest, res: Response): Promise<void>
 export const getAlert = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const alert = await prisma.alert.findFirst({
-      where: { id: req.params.id, userId: req.userId! },
+      where: { id: req.params.id as string, userId: req.userId! },
       include: { website: { select: { name: true, url: true } } },
     })
 
@@ -71,7 +71,7 @@ export const listAlertRules = async (req: AuthRequest, res: Response): Promise<v
 export const createAlertRule = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId!
-    const { websiteId, type, recipients, threshold } = req.body
+    const { websiteId, type, target, condition } = req.body
 
     if (!websiteId || !type) {
       res.status(400).json({ error: 'websiteId and type are required' })
@@ -90,9 +90,11 @@ export const createAlertRule = async (req: AuthRequest, res: Response): Promise<
     const rule = await prisma.alertRule.create({
       data: {
         websiteId,
+        userId,
         type,
-        recipients: Array.isArray(recipients) ? recipients : [],
-        threshold: Math.max(Number(threshold) || 1, 1),
+        target: typeof target === 'string' ? target : '',
+        condition: typeof condition === 'string' ? condition : undefined,
+        enabled: true,
       },
       include: { website: { select: { name: true, url: true } } },
     })
@@ -107,7 +109,7 @@ export const createAlertRule = async (req: AuthRequest, res: Response): Promise<
 export const updateAlertRule = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const existing = await prisma.alertRule.findFirst({
-      where: { id: req.params.id, website: { userId: req.userId! } },
+      where: { id: req.params.id as string, website: { userId: req.userId! } },
     })
 
     if (!existing) {
@@ -118,9 +120,9 @@ export const updateAlertRule = async (req: AuthRequest, res: Response): Promise<
     const data: Record<string, unknown> = {}
 
     if (req.body.type !== undefined) data.type = req.body.type
-    if (req.body.recipients !== undefined) data.recipients = req.body.recipients
-    if (req.body.isEnabled !== undefined) data.isEnabled = req.body.isEnabled
-    if (req.body.threshold !== undefined) data.threshold = Math.max(Number(req.body.threshold), 1)
+    if (req.body.target !== undefined) data.target = req.body.target
+    if (req.body.enabled !== undefined) data.enabled = req.body.enabled
+    if (req.body.condition !== undefined) data.condition = req.body.condition
 
     const rule = await prisma.alertRule.update({
       where: { id: existing.id },
@@ -138,7 +140,7 @@ export const updateAlertRule = async (req: AuthRequest, res: Response): Promise<
 export const deleteAlertRule = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const existing = await prisma.alertRule.findFirst({
-      where: { id: req.params.id, website: { userId: req.userId! } },
+      where: { id: req.params.id as string, website: { userId: req.userId! } },
     })
 
     if (!existing) {

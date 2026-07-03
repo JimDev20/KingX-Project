@@ -55,14 +55,14 @@ export const listUsers = async (req: AuthRequest, res: Response): Promise<void> 
 export const updateUserRole = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { role } = req.body
-    const validRoles = ['USER', 'ADMIN', 'SUPERADMIN']
+    const validRoles = ['user', 'admin', 'superadmin']
 
     if (!validRoles.includes(role)) {
       res.status(400).json({ error: 'Invalid role' })
       return
     }
 
-    const user = await prisma.user.findUnique({ where: { id: req.params.id } })
+    const user = await prisma.user.findUnique({ where: { id: req.params.id as string } })
 
     if (!user) {
       res.status(404).json({ error: 'User not found' })

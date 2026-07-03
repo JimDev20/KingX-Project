@@ -1,5 +1,5 @@
 import { Response } from 'express'
-import { CheckMethod, Prisma, WebsiteStatus } from '@prisma/client'
+import { WebsiteMethod, WebsiteStatus, Prisma } from '@prisma/client'
 import prisma from '../config/prisma'
 import { AuthRequest } from '../middleware/auth'
 import { checkWebsite } from '../services/monitorService'
@@ -19,9 +19,9 @@ const normalizeUrl = (value: unknown): string | null => {
   }
 }
 
-const parseMethod = (value: unknown): CheckMethod => {
-  if (value === CheckMethod.POST || value === CheckMethod.HEAD) return value
-  return CheckMethod.GET
+const parseMethod = (value: unknown): WebsiteMethod => {
+  if (value === 'POST' || value === 'HEAD') return value as WebsiteMethod
+  return 'GET'
 }
 
 const parseTags = (value: unknown): string[] => {
@@ -41,7 +41,7 @@ const getRouteId = (value: string | string[] | undefined): string => {
 const calculateUptime = async (websiteId: string): Promise<number> => {
   const [total, up] = await Promise.all([
     prisma.websiteHistory.count({ where: { websiteId } }),
-    prisma.websiteHistory.count({ where: { websiteId, status: WebsiteStatus.UP } }),
+    prisma.websiteHistory.count({ where: { websiteId, status: 'up' } }),
   ])
 
   if (total === 0) return 100
@@ -78,7 +78,9 @@ export const listWebsites = async (req: AuthRequest, res: Response): Promise<voi
     const page = Math.max(Number(req.query.page) || 1, 1)
     const pageSize = Math.min(Math.max(Number(req.query.pageSize) || DEFAULT_PAGE_SIZE, 1), MAX_PAGE_SIZE)
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : ''
-    const status = typeof req.query.status === 'string' ? req.query.status.toUpperCase() : ''
+    const status = typeof req.query.status === 'string' ? req.query.status.toLowerCase() : ''
+
+    const validStatuses: WebsiteStatus[] = ['up', 'down', 'pending', 'maintenance']
 
     const where: Prisma.WebsiteWhereInput = {
       ...websiteAccessWhere(userId),
@@ -90,9 +92,7 @@ export const listWebsites = async (req: AuthRequest, res: Response): Promise<voi
             ],
           }
         : {}),
-      ...(Object.values(WebsiteStatus).includes(status as WebsiteStatus)
-        ? { status: status as WebsiteStatus }
-        : {}),
+      ...(validStatuses.includes(status as WebsiteStatus) ? { status: status as WebsiteStatus } : {}),
     }
 
     const [items, total] = await Promise.all([
@@ -306,9 +306,9 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
     const userId = req.userId!
     const [totalSites, upSites, downSites, pendingSites, responseAggregate] = await Promise.all([
       prisma.website.count({ where: websiteAccessWhere(userId) }),
-      prisma.website.count({ where: { ...websiteAccessWhere(userId), status: WebsiteStatus.UP } }),
-      prisma.website.count({ where: { ...websiteAccessWhere(userId), status: WebsiteStatus.DOWN } }),
-      prisma.website.count({ where: { ...websiteAccessWhere(userId), status: WebsiteStatus.PENDING } }),
+      prisma.website.count({ where: { ...websiteAccessWhere(userId), status: 'up' } }),
+      prisma.website.count({ where: { ...websiteAccessWhere(userId), status: 'down' } }),
+      prisma.website.count({ where: { ...websiteAccessWhere(userId), status: 'pending' } }),
       prisma.website.aggregate({
         where: {
           ...websiteAccessWhere(userId),

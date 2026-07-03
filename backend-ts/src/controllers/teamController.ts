@@ -1,5 +1,5 @@
 import { Response } from 'express'
-import { Prisma, TeamRole } from '@prisma/client'
+import { Prisma, TeamMemberRole } from '@prisma/client'
 import prisma from '../config/prisma'
 import { AuthRequest } from '../middleware/auth'
 
@@ -17,9 +17,9 @@ const getRouteId = (value: string | string[] | undefined): string => {
   return Array.isArray(value) ? value[0] : value || ''
 }
 
-const parseRole = (value: unknown): TeamRole => {
-  if (value === TeamRole.ADMIN || value === TeamRole.VIEWER) return value
-  return TeamRole.MEMBER
+const parseRole = (value: unknown): TeamMemberRole => {
+  if (value === 'admin' || value === 'viewer') return value as TeamMemberRole
+  return 'member'
 }
 
 const getMembership = async (teamId: string, userId: string) => {
@@ -34,8 +34,11 @@ const getMembership = async (teamId: string, userId: string) => {
 }
 
 const requireTeamAdmin = async (teamId: string, userId: string) => {
-  const membership = await getMembership(teamId, userId)
-  return membership?.role === TeamRole.OWNER || membership?.role === TeamRole.ADMIN
+  const [membership, team] = await Promise.all([
+    getMembership(teamId, userId),
+    prisma.team.findUnique({ where: { id: teamId }, select: { ownerId: true } }),
+  ])
+  return team?.ownerId === userId || membership?.role === 'admin'
 }
 
 const teamInclude = {
@@ -109,7 +112,7 @@ export const createTeam = async (req: AuthRequest, res: Response): Promise<void>
         members: {
           create: {
             userId: req.userId!,
-            role: TeamRole.OWNER,
+            role: 'admin',
           },
         },
       },
@@ -227,7 +230,8 @@ export const updateTeamMember = async (req: AuthRequest, res: Response): Promise
       return
     }
 
-    if (existing.role === TeamRole.OWNER) {
+    const team = await prisma.team.findUnique({ where: { id: teamId }, select: { ownerId: true } })
+    if (existing.userId === team?.ownerId) {
       res.status(400).json({ error: 'Owner role cannot be changed from this endpoint' })
       return
     }
@@ -267,7 +271,8 @@ export const removeTeamMember = async (req: AuthRequest, res: Response): Promise
       return
     }
 
-    if (existing.role === TeamRole.OWNER) {
+    const team = await prisma.team.findUnique({ where: { id: teamId }, select: { ownerId: true } })
+    if (existing.userId === team?.ownerId) {
       res.status(400).json({ error: 'Team owner cannot be removed' })
       return
     }

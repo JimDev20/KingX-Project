@@ -1,4 +1,4 @@
-import { CheckMethod, WebsiteStatus } from '@prisma/client'
+import { WebsiteMethod, WebsiteStatus } from '@prisma/client'
 
 export interface MonitorResult {
   status: WebsiteStatus
@@ -9,7 +9,7 @@ export interface MonitorResult {
 
 export const checkWebsite = async (
   url: string,
-  method: CheckMethod,
+  method: WebsiteMethod,
   timeout: number,
 ): Promise<MonitorResult> => {
   const startedAt = Date.now()
@@ -24,7 +24,7 @@ export const checkWebsite = async (
     })
 
     return {
-      status: response.ok ? WebsiteStatus.UP : WebsiteStatus.DOWN,
+      status: response.ok ? 'up' : 'down',
       responseTime: Date.now() - startedAt,
       statusCode: response.status,
       error: response.ok ? undefined : `HTTP ${response.status}`,
@@ -33,7 +33,7 @@ export const checkWebsite = async (
     const message = error instanceof Error ? error.message : 'Request failed'
 
     return {
-      status: WebsiteStatus.DOWN,
+      status: 'down',
       responseTime: Date.now() - startedAt,
       error: message,
     }
