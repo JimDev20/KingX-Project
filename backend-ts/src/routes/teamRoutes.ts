@@ -1,18 +1,25 @@
-import { Router } from 'express';
-import { createTeam, getTeams, getTeam, updateTeam, deleteTeam, inviteMember, removeMember } from '../controllers/teamController';
-import { authenticate } from '../middleware/auth';
-import { asyncHandler } from '../middleware/errorHandler';
+import { Router } from 'express'
+import {
+  addTeamMember,
+  createTeam,
+  deleteTeam,
+  getTeam,
+  listTeams,
+  removeTeamMember,
+  updateTeamMember,
+} from '../controllers/teamController'
+import { authenticate } from '../middleware/auth'
 
-const router = Router();
+const router = Router()
 
-router.use(authenticate);
+router.use(authenticate)
 
-router.post('/', asyncHandler(createTeam));
-router.get('/', asyncHandler(getTeams));
-router.get('/:id', asyncHandler(getTeam));
-router.patch('/:id', asyncHandler(updateTeam));
-router.delete('/:id', asyncHandler(deleteTeam));
-router.post('/:id/invite', asyncHandler(inviteMember));
-router.delete('/:id/members/:memberId', asyncHandler(removeMember));
+router.get('/', listTeams)
+router.post('/', createTeam)
+router.get('/:id', getTeam)
+router.delete('/:id', deleteTeam)
+router.post('/:id/members', addTeamMember)
+router.patch('/:id/members/:memberId', updateTeamMember)
+router.delete('/:id/members/:memberId', removeTeamMember)
 
-export default router;
+export default router

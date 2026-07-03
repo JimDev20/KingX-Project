@@ -1,61 +1,46 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import { validateEnv, env } from './config/env';
-import { errorHandler } from './middleware/errorHandler';
-import { startMonitoring } from './services/monitorService';
-import logger from './utils/logger';
+import './config/env'
+import express from 'express'
+import cors from 'cors'
+import prisma from './config/prisma'
+import authRoutes from './routes/authRoutes'
+import teamRoutes from './routes/teamRoutes'
+import websiteRoutes from './routes/websiteRoutes'
 
-import authRoutes from './routes/authRoutes';
-import teamRoutes from './routes/teamRoutes';
-import websiteRoutes from './routes/websiteRoutes';
-import adminRoutes from './routes/adminRoutes';
-import apiKeyRoutes from './routes/apiKeyRoutes';
+const app = express()
+const PORT = process.env.PORT || 8080
+const corsOrigin = process.env.CORS_ORIGIN
 
-validateEnv();
+app.use(cors({
+  origin: corsOrigin ? corsOrigin.split(',').map((origin) => origin.trim()) : true,
+  credentials: true,
+}))
+app.use(express.json())
 
-const app = express();
+app.use('/api/auth', authRoutes)
+app.use('/api/teams', teamRoutes)
+app.use('/api/websites', websiteRoutes)
 
-app.use(helmet());
-app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
-app.use(express.json({ limit: '10kb' }));
+app.get('/api/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many requests. Please try again later.' },
-});
-app.use('/api/', limiter);
+    res.json({
+      status: 'ok',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+    })
+  } catch (error) {
+    console.error('Health check database error:', error)
 
-app.get('/api/health', (_req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: env.NODE_ENV,
-  });
-});
+    res.status(503).json({
+      status: 'degraded',
+      database: 'disconnected',
+      timestamp: new Date().toISOString(),
+    })
+  }
+})
 
-app.use('/api/auth', authRoutes);
-app.use('/api/teams', teamRoutes);
-app.use('/api/websites', websiteRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/api-keys', apiKeyRoutes);
-
-app.use((_req, res) => {
-  res.status(404).json({ error: 'Route not found.' });
-});
-
-app.use(errorHandler);
-
-if (process.env.NODE_ENV !== 'test') {
-  app.listen(env.PORT, () => {
-    logger.info({ port: env.PORT, env: env.NODE_ENV }, 'Server started');
-    startMonitoring();
-  });
-}
-
-export default app;
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`)
+  console.log(`Health check: http://localhost:${PORT}/api/health`)
+})

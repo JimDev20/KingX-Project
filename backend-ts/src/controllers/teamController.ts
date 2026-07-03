@@ -1,185 +1,304 @@
-import { Response } from 'express';
-import prisma from '../config/prisma';
-import logger from '../utils/logger';
-import { AuthRequest } from '../middleware/auth';
-import { paramId, paramStr } from '../utils/helpers';
+import { Response } from 'express'
+import { Prisma, TeamRole } from '@prisma/client'
+import prisma from '../config/prisma'
+import { AuthRequest } from '../middleware/auth'
 
-export async function createTeam(req: AuthRequest, res: Response): Promise<void> {
-  const { name } = req.body;
-  if (!name) {
-    res.status(400).json({ error: 'Team name is required.' });
-    return;
-  }
+const slugify = (value: string) => {
+  const slug = value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 
-  const slug = name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
-
-  const team = await prisma.team.create({
-    data: { name, slug, ownerId: req.user!.userId },
-  });
-
-  await prisma.teamMember.create({
-    data: { teamId: team.id, userId: req.user!.userId, role: 'admin' },
-  });
-
-  logger.info({ teamId: team.id, userId: req.user!.userId }, 'Team created');
-  res.status(201).json({ team });
+  return slug || `team-${Date.now()}`
 }
 
-export async function getTeams(req: AuthRequest, res: Response): Promise<void> {
-  const teams = await prisma.team.findMany({
+const getRouteId = (value: string | string[] | undefined): string => {
+  return Array.isArray(value) ? value[0] : value || ''
+}
+
+const parseRole = (value: unknown): TeamRole => {
+  if (value === TeamRole.ADMIN || value === TeamRole.VIEWER) return value
+  return TeamRole.MEMBER
+}
+
+const getMembership = async (teamId: string, userId: string) => {
+  return prisma.teamMember.findUnique({
     where: {
-      members: { some: { userId: req.user!.userId } },
-    },
-    include: {
-      _count: { select: { members: true, websites: true } },
-      owner: { select: { id: true, email: true, fullName: true } },
-    },
-  });
-
-  res.json({ teams });
-}
-
-export async function getTeam(req: AuthRequest, res: Response): Promise<void> {
-  const id = paramId(req);
-
-  const team = await prisma.team.findUnique({
-    where: { id },
-    include: {
-      members: {
-        include: { user: { select: { id: true, email: true, fullName: true, avatar: true } } },
+      teamId_userId: {
+        teamId,
+        userId,
       },
-      websites: { include: { _count: { select: { history: true } } } },
-      owner: { select: { id: true, email: true, fullName: true } },
     },
-  });
-
-  if (!team) {
-    res.status(404).json({ error: 'Team not found.' });
-    return;
-  }
-
-  const isMember = team.members.some((m: { userId: string }) => m.userId === req.user!.userId);
-  if (!isMember) {
-    res.status(403).json({ error: 'Access denied.' });
-    return;
-  }
-
-  res.json({ team });
+  })
 }
 
-export async function updateTeam(req: AuthRequest, res: Response): Promise<void> {
-  const id = paramId(req);
-  const { name, logo } = req.body;
-
-  const team = await prisma.team.findUnique({ where: { id } });
-  if (!team) {
-    res.status(404).json({ error: 'Team not found.' });
-    return;
-  }
-  if (team.ownerId !== req.user!.userId) {
-    res.status(403).json({ error: 'Only the team owner can update the team.' });
-    return;
-  }
-
-  const updated = await prisma.team.update({
-    where: { id },
-    data: { ...(name && { name }), ...(logo !== undefined && { logo }) },
-  });
-
-  res.json({ team: updated });
+const requireTeamAdmin = async (teamId: string, userId: string) => {
+  const membership = await getMembership(teamId, userId)
+  return membership?.role === TeamRole.OWNER || membership?.role === TeamRole.ADMIN
 }
 
-export async function deleteTeam(req: AuthRequest, res: Response): Promise<void> {
-  const id = paramId(req);
-  const team = await prisma.team.findUnique({ where: { id } });
-  if (!team) {
-    res.status(404).json({ error: 'Team not found.' });
-    return;
-  }
-  if (team.ownerId !== req.user!.userId) {
-    res.status(403).json({ error: 'Only the team owner can delete the team.' });
-    return;
-  }
+const teamInclude = {
+  owner: {
+    select: {
+      id: true,
+      email: true,
+      fullName: true,
+    },
+  },
+  members: {
+    include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          role: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'asc',
+    },
+  },
+  _count: {
+    select: {
+      websites: true,
+    },
+  },
+} satisfies Prisma.TeamInclude
 
-  await prisma.team.delete({ where: { id } });
-  logger.info({ teamId: id }, 'Team deleted');
-  res.json({ message: 'Team deleted.' });
+export const listTeams = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const teams = await prisma.team.findMany({
+      where: {
+        members: {
+          some: {
+            userId: req.userId!,
+          },
+        },
+      },
+      include: teamInclude,
+      orderBy: { createdAt: 'desc' },
+    })
+
+    res.json({ teams })
+  } catch (error) {
+    console.error('List teams error:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
 }
 
-export async function inviteMember(req: AuthRequest, res: Response): Promise<void> {
-  const id = paramId(req);
-  const { email, role } = req.body;
+export const createTeam = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const name = typeof req.body.name === 'string' ? req.body.name.trim() : ''
 
-  if (!email) {
-    res.status(400).json({ error: 'Email is required.' });
-    return;
+    if (!name) {
+      res.status(400).json({ error: 'Team name is required' })
+      return
+    }
+
+    const baseSlug = slugify(req.body.slug || name)
+    const slug = `${baseSlug}-${Date.now().toString(36)}`
+
+    const team = await prisma.team.create({
+      data: {
+        name,
+        slug,
+        ownerId: req.userId!,
+        members: {
+          create: {
+            userId: req.userId!,
+            role: TeamRole.OWNER,
+          },
+        },
+      },
+      include: teamInclude,
+    })
+
+    res.status(201).json({ team })
+  } catch (error) {
+    console.error('Create team error:', error)
+    res.status(500).json({ error: 'Internal server error' })
   }
-
-  const team = await prisma.team.findUnique({ where: { id } });
-  if (!team) {
-    res.status(404).json({ error: 'Team not found.' });
-    return;
-  }
-
-  const isOwner = team.ownerId === req.user!.userId;
-  const isAdmin = await prisma.teamMember.findFirst({
-    where: { teamId: id, userId: req.user!.userId, role: 'admin' },
-  });
-
-  if (!isOwner && !isAdmin) {
-    res.status(403).json({ error: 'Only admins can invite members.' });
-    return;
-  }
-
-  const userToInvite = await prisma.user.findUnique({ where: { email } });
-  if (!userToInvite) {
-    res.status(404).json({ error: 'No user with that email.' });
-    return;
-  }
-
-  const existingMember = await prisma.teamMember.findUnique({
-    where: { teamId_userId: { teamId: id, userId: userToInvite.id } },
-  });
-  if (existingMember) {
-    res.status(409).json({ error: 'User is already a team member.' });
-    return;
-  }
-
-  const member = await prisma.teamMember.create({
-    data: { teamId: id, userId: userToInvite.id, role: role || 'member' },
-  });
-
-  logger.info({ teamId: id, invitedUserId: userToInvite.id }, 'Member invited');
-  res.status(201).json({ member });
 }
 
-export async function removeMember(req: AuthRequest, res: Response): Promise<void> {
-  const id = paramId(req);
-  const memberId = paramStr(req, 'memberId');
+export const getTeam = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const teamId = getRouteId(req.params.id)
+    const membership = await getMembership(teamId, req.userId!)
 
-  const team = await prisma.team.findUnique({ where: { id } });
-  if (!team) {
-    res.status(404).json({ error: 'Team not found.' });
-    return;
+    if (!membership) {
+      res.status(404).json({ error: 'Team not found' })
+      return
+    }
+
+    const team = await prisma.team.findUnique({
+      where: { id: teamId },
+      include: teamInclude,
+    })
+
+    res.json({ team })
+  } catch (error) {
+    console.error('Get team error:', error)
+    res.status(500).json({ error: 'Internal server error' })
   }
+}
 
-  const isOwner = team.ownerId === req.user!.userId;
-  const isAdmin = await prisma.teamMember.findFirst({
-    where: { teamId: id, userId: req.user!.userId, role: 'admin' },
-  });
+export const addTeamMember = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const teamId = getRouteId(req.params.id)
+    const canManage = await requireTeamAdmin(teamId, req.userId!)
 
-  if (!isOwner && !isAdmin) {
-    res.status(403).json({ error: 'Only admins can remove members.' });
-    return;
+    if (!canManage) {
+      res.status(403).json({ error: 'Only team owners and admins can manage members' })
+      return
+    }
+
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : ''
+    const role = parseRole(req.body.role)
+
+    if (!email) {
+      res.status(400).json({ error: 'Member email is required' })
+      return
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } })
+
+    if (!user) {
+      res.status(404).json({ error: 'User must register before being added to a team' })
+      return
+    }
+
+    const member = await prisma.teamMember.upsert({
+      where: {
+        teamId_userId: {
+          teamId,
+          userId: user.id,
+        },
+      },
+      create: {
+        teamId,
+        userId: user.id,
+        role,
+      },
+      update: {
+        role,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            fullName: true,
+            role: true,
+          },
+        },
+      },
+    })
+
+    res.status(201).json({ member })
+  } catch (error) {
+    console.error('Add team member error:', error)
+    res.status(500).json({ error: 'Internal server error' })
   }
+}
 
-  if (memberId === team.ownerId) {
-    res.status(400).json({ error: 'Cannot remove the team owner.' });
-    return;
+export const updateTeamMember = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const teamId = getRouteId(req.params.id)
+    const memberId = getRouteId(req.params.memberId)
+    const canManage = await requireTeamAdmin(teamId, req.userId!)
+
+    if (!canManage) {
+      res.status(403).json({ error: 'Only team owners and admins can manage members' })
+      return
+    }
+
+    const existing = await prisma.teamMember.findFirst({
+      where: {
+        id: memberId,
+        teamId,
+      },
+    })
+
+    if (!existing) {
+      res.status(404).json({ error: 'Team member not found' })
+      return
+    }
+
+    if (existing.role === TeamRole.OWNER) {
+      res.status(400).json({ error: 'Owner role cannot be changed from this endpoint' })
+      return
+    }
+
+    const member = await prisma.teamMember.update({
+      where: { id: memberId },
+      data: { role: parseRole(req.body.role) },
+    })
+
+    res.json({ member })
+  } catch (error) {
+    console.error('Update team member error:', error)
+    res.status(500).json({ error: 'Internal server error' })
   }
+}
 
-  await prisma.teamMember.delete({ where: { id: memberId } });
+export const removeTeamMember = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const teamId = getRouteId(req.params.id)
+    const memberId = getRouteId(req.params.memberId)
+    const canManage = await requireTeamAdmin(teamId, req.userId!)
 
-  logger.info({ teamId: id, removedMemberId: memberId }, 'Member removed');
-  res.json({ message: 'Member removed.' });
+    if (!canManage) {
+      res.status(403).json({ error: 'Only team owners and admins can manage members' })
+      return
+    }
+
+    const existing = await prisma.teamMember.findFirst({
+      where: {
+        id: memberId,
+        teamId,
+      },
+    })
+
+    if (!existing) {
+      res.status(404).json({ error: 'Team member not found' })
+      return
+    }
+
+    if (existing.role === TeamRole.OWNER) {
+      res.status(400).json({ error: 'Team owner cannot be removed' })
+      return
+    }
+
+    await prisma.teamMember.delete({ where: { id: memberId } })
+    res.status(204).send()
+  } catch (error) {
+    console.error('Remove team member error:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+export const deleteTeam = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const teamId = getRouteId(req.params.id)
+    const team = await prisma.team.findFirst({
+      where: {
+        id: teamId,
+        ownerId: req.userId!,
+      },
+    })
+
+    if (!team) {
+      res.status(404).json({ error: 'Team not found' })
+      return
+    }
+
+    await prisma.team.delete({ where: { id: teamId } })
+    res.status(204).send()
+  } catch (error) {
+    console.error('Delete team error:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
 }

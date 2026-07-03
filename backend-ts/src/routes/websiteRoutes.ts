@@ -1,26 +1,27 @@
-import { Router } from 'express';
-import { createWebsite, getWebsites, getWebsite, updateWebsite, deleteWebsite, checkWebsite, getWebsiteHistory, getDashboardStats } from '../controllers/websiteController';
-import { getAlerts, createAlertRule, getAlertRules, deleteAlertRule } from '../controllers/alertController';
-import { authenticate } from '../middleware/auth';
-import { asyncHandler } from '../middleware/errorHandler';
+import { Router } from 'express'
+import {
+  createWebsite,
+  deleteWebsite,
+  getDashboardStats,
+  getWebsite,
+  listWebsiteHistory,
+  listWebsites,
+  runWebsiteCheck,
+  updateWebsite,
+} from '../controllers/websiteController'
+import { authenticate } from '../middleware/auth'
 
-const router = Router();
+const router = Router()
 
-router.use(authenticate);
+router.use(authenticate)
 
-router.get('/dashboard', asyncHandler(getDashboardStats));
+router.get('/stats', getDashboardStats)
+router.get('/', listWebsites)
+router.post('/', createWebsite)
+router.get('/:id', getWebsite)
+router.patch('/:id', updateWebsite)
+router.delete('/:id', deleteWebsite)
+router.post('/:id/check', runWebsiteCheck)
+router.get('/:id/history', listWebsiteHistory)
 
-router.post('/', asyncHandler(createWebsite));
-router.get('/', asyncHandler(getWebsites));
-router.get('/:id', asyncHandler(getWebsite));
-router.patch('/:id', asyncHandler(updateWebsite));
-router.delete('/:id', asyncHandler(deleteWebsite));
-router.post('/:id/check', asyncHandler(checkWebsite));
-router.get('/:id/history', asyncHandler(getWebsiteHistory));
-
-router.get('/:id/alerts', asyncHandler(getAlerts));
-router.post('/:websiteId/alerts/rules', asyncHandler(createAlertRule));
-router.get('/:websiteId/alerts/rules', asyncHandler(getAlertRules));
-router.delete('/alerts/rules/:id', asyncHandler(deleteAlertRule));
-
-export default router;
+export default router
