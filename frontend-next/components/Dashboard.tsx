@@ -1,12 +1,14 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Activity, AlertTriangle, CheckCircle2, Clock3, Globe2, Loader2, LogOut } from 'lucide-react'
+import { Activity, AlertTriangle, CheckCircle2, Clock3, Globe2, Loader2, LogOut, Users, Settings } from 'lucide-react'
 import StatCard from './StatCard'
 import WebsiteForm from './WebsiteForm'
 import WebsiteTable from './WebsiteTable'
 import UptimeChart from './UptimeChart'
 import WebsiteEditModal from './WebsiteEditModal'
+import TeamsPage from './TeamsPage'
+import SettingsPage from './SettingsPage'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
@@ -54,6 +56,8 @@ export default function Dashboard() {
   const [message, setMessage] = useState('')
   const [selectedWebsite, setSelectedWebsite] = useState<{ id: string; name: string } | null>(null)
   const [editingWebsite, setEditingWebsite] = useState<Website | null>(null)
+  const [showTeams, setShowTeams] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
 
   const authHeaders = useMemo(() => ({
     Authorization: `Bearer ${token}`,
@@ -306,14 +310,32 @@ export default function Dashboard() {
               <p className="text-sm text-slate-500">{user.email}</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            title="Sign out"
-            className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowTeams(true)}
+              title="Teams"
+              className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600"
+            >
+              <Users className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowSettings(true)}
+              title="Settings"
+              className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600"
+            >
+              <Settings className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              title="Sign out"
+              className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -370,6 +392,14 @@ export default function Dashboard() {
           onClose={() => setEditingWebsite(null)}
           onSaved={() => loadDashboard()}
         />
+      )}
+
+      {showTeams && (
+        <TeamsPage onClose={() => setShowTeams(false)} />
+      )}
+
+      {showSettings && (
+        <SettingsPage onClose={() => setShowSettings(false)} />
       )}
     </main>
   )
