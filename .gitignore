@@ -8,3 +8,6 @@ __pycache__/
 dist/
 build/
 .DS_Store
+.next/
+frontend-next/
+backend-ts/prisma/migrate-from-mongo.ts
