@@ -304,17 +304,17 @@ export default function Dashboard() {
   return (
     <main className="min-h-screen bg-[#f8fafc]">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br from-[#0f172a] to-[#1e293b] text-emerald-400">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[#0f172a] to-[#1e293b] text-emerald-400">
               <Activity className="h-6 w-6" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-lg font-bold text-slate-900">KingX Monitor</p>
-              <p className="text-sm text-slate-500">{user.email}</p>
+              <p className="truncate text-sm text-slate-500">{user.email}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setShowAlerts(true)}
@@ -371,8 +371,8 @@ export default function Dashboard() {
           />
         </aside>
 
-        <section className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="min-w-0 space-y-6">
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
             <StatCard icon={<Globe2 className="h-5 w-5" />} label="Total Sites" value={stats.totalSites} tone="indigo" />
             <StatCard icon={<CheckCircle2 className="h-5 w-5" />} label="Uptime" value={`${stats.uptime}%`} tone="emerald" />
             <StatCard icon={<AlertTriangle className="h-5 w-5" />} label="Down" value={stats.downSites} tone="red" />
