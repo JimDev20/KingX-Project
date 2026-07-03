@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Activity, AlertTriangle, Bell, CheckCircle2, Clock3, Globe2, Loader2, LogOut, Users, Settings } from 'lucide-react'
+import { Activity, AlertTriangle, Bell, CheckCircle2, Clock3, Globe2, Loader2, LogOut, Shield, Users, Settings } from 'lucide-react'
 import StatCard from './StatCard'
 import WebsiteForm from './WebsiteForm'
 import WebsiteTable from './WebsiteTable'
@@ -10,6 +10,7 @@ import WebsiteEditModal from './WebsiteEditModal'
 import TeamsPage from './TeamsPage'
 import SettingsPage from './SettingsPage'
 import AlertsPage from './AlertsPage'
+import AdminPage from './AdminPage'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
@@ -60,6 +61,7 @@ export default function Dashboard() {
   const [showTeams, setShowTeams] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showAlerts, setShowAlerts] = useState(false)
+  const [showAdmin, setShowAdmin] = useState(false)
 
   const authHeaders = useMemo(() => ({
     Authorization: `Bearer ${token}`,
@@ -337,6 +339,16 @@ export default function Dashboard() {
             >
               <Settings className="h-5 w-5" />
             </button>
+            {user.role === 'SUPERADMIN' && (
+              <button
+                type="button"
+                onClick={() => setShowAdmin(true)}
+                title="Admin"
+                className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-purple-200 hover:bg-purple-50 hover:text-purple-600"
+              >
+                <Shield className="h-5 w-5" />
+              </button>
+            )}
             <button
               type="button"
               onClick={handleLogout}
@@ -414,6 +426,10 @@ export default function Dashboard() {
 
       {showAlerts && (
         <AlertsPage onClose={() => setShowAlerts(false)} />
+      )}
+
+      {showAdmin && (
+        <AdminPage onClose={() => setShowAdmin(false)} />
       )}
     </main>
   )

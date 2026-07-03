@@ -6,6 +6,7 @@ import authRoutes from './routes/authRoutes'
 import teamRoutes from './routes/teamRoutes'
 import websiteRoutes from './routes/websiteRoutes'
 import alertRoutes from './routes/alertRoutes'
+import adminRoutes from './routes/adminRoutes'
 import { startMonitoring } from './services/scheduler'
 
 const app = express()
@@ -22,6 +23,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/teams', teamRoutes)
 app.use('/api/websites', websiteRoutes)
 app.use('/api/alerts', alertRoutes)
+app.use('/api/admin', adminRoutes)
 
 app.get('/api/health', async (req, res) => {
   try {
