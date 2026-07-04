@@ -36,9 +36,9 @@ export default function StatusBadgePage({ onClose, inline }: Props) {
     const load = async () => {
       setLoadingTeams(true)
       try {
-        const data = await request<{ items: Team[] }>('/teams')
-        setTeams(data.items)
-        if (data.items.length > 0) setSelectedSlug(data.items[0].slug)
+        const data = await request<{ teams: Team[] }>('/teams')
+        setTeams(data.teams)
+        if (data.teams.length > 0) setSelectedSlug(data.teams[0].slug)
       } catch (e) { setMessage(e instanceof Error ? e.message : 'Failed to load teams') }
       finally { setLoadingTeams(false) }
     }
