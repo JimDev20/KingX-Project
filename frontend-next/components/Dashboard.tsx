@@ -67,7 +67,7 @@ function DashboardInner() {
   })
   const [authForm, setAuthForm] = useState({ fullName: '', email: '', password: '' })
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
-  const [siteForm, setSiteForm] = useState({ name: '', url: '', method: 'GET', tags: '' })
+  const [siteForm, setSiteForm] = useState({ name: '', url: '', method: 'GET', tags: '', checkInterval: '300' })
   const [websites, setWebsites] = useState<Website[]>([])
   const [stats, setStats] = useState<Stats>(emptyStats)
   const [search, setSearch] = useState('')
@@ -141,8 +141,14 @@ function DashboardInner() {
   const handleCreateWebsite = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true); setMessage('')
     try {
-      await request('/websites', { method: 'POST', headers: authHeaders, body: JSON.stringify({ ...siteForm, tags: siteForm.tags.split(',').map(t => t.trim()).filter(Boolean) }) })
-      setSiteForm({ name: '', url: '', method: 'GET', tags: '' }); await loadDashboard()
+      await request('/websites', { method: 'POST', headers: authHeaders, body: JSON.stringify({
+        name: siteForm.name,
+        url: siteForm.url,
+        method: siteForm.method,
+        checkInterval: Number(siteForm.checkInterval),
+        tags: siteForm.tags.split(',').map(t => t.trim()).filter(Boolean),
+      }) })
+      setSiteForm({ name: '', url: '', method: 'GET', tags: '', checkInterval: '300' }); await loadDashboard()
     } catch (err) { setMessage(err instanceof Error ? err.message : 'Failed') }
     finally { setLoading(false) }
   }
@@ -246,8 +252,7 @@ function DashboardInner() {
               </div>
             )}
 
-            <div className="rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-sm p-5 dark:border-slate-700/80 dark:bg-slate-900/80">
-              <h2 className="mb-3 font-semibold text-slate-900 dark:text-white">Quick Add</h2>
+            <div>
               <WebsiteForm siteForm={siteForm} loading={loading} onSubmit={handleCreateWebsite} onChange={handleSiteFormChange} />
             </div>
             <WebsiteTable websites={websites} search={search} statusFilter={statusFilter} checkingId={checkingId}

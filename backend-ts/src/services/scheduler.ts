@@ -1,17 +1,23 @@
 import prisma from '../config/prisma'
 import { checkWebsite } from './monitorService'
 
-const CHECK_INTERVAL = 5 * 60 * 1000
+const TICK_INTERVAL = 30 * 1000
 
 let intervalId: ReturnType<typeof setInterval> | null = null
 
-async function checkAllWebsites() {
+async function checkDueWebsites() {
   try {
+    const now = new Date()
     const websites = await prisma.website.findMany({
       where: { status: { not: 'MAINTENANCE' } },
     })
 
     for (const site of websites) {
+      const intervalMs = site.checkInterval * 1000
+      const elapsed = site.lastChecked ? now.getTime() - site.lastChecked.getTime() : intervalMs + 1
+
+      if (elapsed < intervalMs) continue
+
       try {
         const result = await checkWebsite(site.url, site.method, site.timeout)
 
@@ -32,7 +38,7 @@ async function checkAllWebsites() {
           data: {
             status: result.status,
             responseTime: result.responseTime,
-            lastChecked: new Date(),
+            lastChecked: now,
             uptime,
           },
         })
@@ -56,8 +62,8 @@ async function calculateUptime(websiteId: string): Promise<number> {
 
 export function startMonitoring() {
   if (intervalId) return
-  checkAllWebsites()
-  intervalId = setInterval(checkAllWebsites, CHECK_INTERVAL)
+  checkDueWebsites()
+  intervalId = setInterval(checkDueWebsites, TICK_INTERVAL)
 }
 
 export function stopMonitoring() {

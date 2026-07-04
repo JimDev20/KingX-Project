@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import Tooltip from './Tooltip'
 
 interface WebsiteFormProps {
-  siteForm: { name: string; url: string; method: string; tags: string }
+  siteForm: { name: string; url: string; method: string; tags: string; checkInterval?: string }
   loading: boolean
   onSubmit: (e: FormEvent<HTMLFormElement>) => void
   onChange: (field: string, value: string) => void
@@ -48,6 +48,21 @@ export default function WebsiteForm({ siteForm, loading, onSubmit, onChange }: W
           <option value="GET">GET</option>
           <option value="HEAD">HEAD</option>
           <option value="POST">POST</option>
+        </select>
+      </label>
+
+      <label className="mb-3 block text-sm font-medium text-slate-700">
+        Check Interval
+        <select
+          value={siteForm.checkInterval || '300'}
+          onChange={(e) => onChange('checkInterval', e.target.value)}
+          className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+        >
+          <option value="60">1 minute</option>
+          <option value="300">5 minutes</option>
+          <option value="600">10 minutes</option>
+          <option value="1800">30 minutes</option>
+          <option value="3600">1 hour</option>
         </select>
       </label>
 
