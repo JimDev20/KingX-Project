@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Activity, AlertCircle, AlertTriangle, BarChart3, Bell, CheckCircle2, Clock3, Code2, FileText,
-  Globe2, History, Home, Loader2, LogOut, Menu, Moon, Shield, Settings, Sun, Users, Webhook, Wrench, X,
+  Globe2, History, Home, LayoutDashboard, Loader2, LogOut, Menu, Moon, Shield, Settings, Sun, Users, Webhook, Wrench, X,
 } from 'lucide-react'
 import StatCard from './StatCard'
 import WebsiteForm from './WebsiteForm'
@@ -26,6 +26,8 @@ import ReportsPage from './ReportsPage'
 import AuditLogPage from './AuditLogPage'
 import WebhooksPage from './WebhooksPage'
 import StatusBadgePage from './StatusBadgePage'
+import DashboardsPage from './DashboardsPage'
+import EventTimelinePage from './EventTimelinePage'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
@@ -50,13 +52,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return payload as T
 }
 
-type Page = 'home' | 'websites' | 'analytics' | 'alerts' | 'team' | 'maintenance' | 'incidents' | 'settings' | 'notifications' | 'ssl' | 'reports' | 'audit' | 'webhooks' | 'badge' | 'admin'
+type Page = 'home' | 'websites' | 'analytics' | 'alerts' | 'team' | 'maintenance' | 'incidents' | 'settings' | 'notifications' | 'ssl' | 'reports' | 'audit' | 'webhooks' | 'badge' | 'dashboards' | 'events' | 'admin'
 
 const pageLabels: Record<Page, string> = {
   home: 'Home', websites: 'Websites', analytics: 'Analytics', alerts: 'Alerts',
   team: 'Team', maintenance: 'Maintenance', incidents: 'Incidents', settings: 'Settings',
   notifications: 'Notifications', ssl: 'SSL Monitor', reports: 'Reports', audit: 'Audit Log',
-  webhooks: 'Webhooks', badge: 'Status Badge', admin: 'Admin',
+  webhooks: 'Webhooks', badge: 'Status Badge', dashboards: 'Dashboards', events: 'Events', admin: 'Admin',
 }
 
 function DashboardInner() {
@@ -384,6 +386,10 @@ function DashboardInner() {
         return <AuditLogPage inline />
       case 'webhooks':
         return <WebhooksPage inline />
+      case 'dashboards':
+        return <DashboardsPage inline />
+      case 'events':
+        return <EventTimelinePage inline />
       case 'badge':
         return <StatusBadgePage inline />
       case 'admin':
@@ -407,6 +413,8 @@ function DashboardInner() {
     { id: 'reports', label: 'Reports', icon: FileText },
     { id: 'audit', label: 'Audit Log', icon: History },
     { id: 'webhooks', label: 'Webhooks', icon: Webhook },
+    { id: 'dashboards', label: 'Dashboards', icon: LayoutDashboard },
+    { id: 'events', label: 'Events', icon: History },
     { id: 'badge', label: 'Status Badge', icon: Code2 },
     ...(user.role === 'SUPERADMIN' ? [{ id: 'admin' as Page, label: 'Admin', icon: Shield, badge: 'Super', badgeColor: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' }] : []),
   ]

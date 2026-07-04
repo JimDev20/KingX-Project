@@ -16,16 +16,20 @@ export function useTheme() {
   return useContext(ThemeContext)
 }
 
+function getInitialTheme(): Theme {
+  if (typeof window === 'undefined') return 'light'
+  const saved = localStorage.getItem('kingx_theme') as Theme | null
+  if (saved === 'dark' || saved === 'light') return saved
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('light')
+  const [theme, setThemeState] = useState<Theme>(getInitialTheme)
 
   useEffect(() => {
-    const saved = localStorage.getItem('kingx_theme') as Theme | null
-    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      setThemeState('dark')
-      document.documentElement.classList.add('dark')
-    }
-  }, [])
+    if (theme === 'dark') document.documentElement.classList.add('dark')
+    else document.documentElement.classList.remove('dark')
+  }, [theme])
 
   const setTheme = useCallback((t: Theme) => {
     setThemeState(t)
