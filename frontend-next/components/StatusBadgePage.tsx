@@ -83,16 +83,18 @@ export default function StatusBadgePage({ onClose, inline }: Props) {
 
         {loadingTeams ? (
           <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>
-        ) : teams.length === 0 ? (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/50">Create a team first to generate a status badge</div>
         ) : (
           <>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Select Team</label>
-              <select value={selectedSlug} onChange={e => setSelectedSlug(e.target.value)}
-                className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white">
-                {teams.map(t => <option key={t.id} value={t.slug}>{t.name} ({t.slug})</option>)}
-              </select>
+              {teams.length > 0 ? (
+                <select value={selectedSlug} onChange={e => setSelectedSlug(e.target.value)}
+                  className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white">
+                  {teams.map(t => <option key={t.id} value={t.slug}>{t.name} ({t.slug})</option>)}
+                </select>
+              ) : (
+                <div className="h-11 w-full rounded-lg border border-dashed border-slate-300 px-3 text-sm text-slate-400 flex items-center dark:border-slate-600">No teams yet — create one in Settings &gt; Team</div>
+              )}
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 dark:border-slate-700 dark:bg-slate-800/30">
@@ -107,8 +109,20 @@ export default function StatusBadgePage({ onClose, inline }: Props) {
                     {badgeData.up} up, {badgeData.down} down ({badgeData.total} total)
                   </div>
                 </div>
-              ) : (
+              ) : teams.length > 0 ? (
                 <p className="text-sm text-slate-400">Select a team to preview</p>
+              ) : (
+                <div className="flex items-center gap-3 py-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="96" height="20">
+                    <rect rx="3" width="96" height="20" fill="#555"/>
+                    <rect rx="3" x="54" width="42" height="20" fill="#94a3b8"/>
+                    <g fill="#fff" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
+                      <text x="6" y="14">KingX - Your Team</text>
+                      <text x="75" y="14" text-anchor="middle">pending</text>
+                    </g>
+                  </svg>
+                  <span className="text-xs text-slate-400">Badge will appear once you have websites</span>
+                </div>
               )}
             </div>
 
