@@ -159,6 +159,8 @@ export const createWebsite = async (req: AuthRequest, res: Response): Promise<vo
         checkInterval: Math.max(Number(req.body.checkInterval) || 300, 60),
         timeout: Math.max(Number(req.body.timeout) || 10000, 1000),
         tags: parseTags(req.body.tags),
+        keywordCheck: req.body.keywordCheck || null,
+        keywordType: req.body.keywordType || null,
       },
     })
 
@@ -209,6 +211,8 @@ export const updateWebsite = async (req: AuthRequest, res: Response): Promise<vo
     if (req.body.checkInterval !== undefined) data.checkInterval = Math.max(Number(req.body.checkInterval) || 300, 60)
     if (req.body.timeout !== undefined) data.timeout = Math.max(Number(req.body.timeout) || 10000, 1000)
     if (req.body.tags !== undefined) data.tags = parseTags(req.body.tags)
+    if (req.body.keywordCheck !== undefined) data.keywordCheck = req.body.keywordCheck || null
+    if (req.body.keywordType !== undefined) data.keywordType = req.body.keywordType || null
 
     const website = await prisma.website.update({
       where: { id: existing.id },
@@ -248,7 +252,13 @@ export const runWebsiteCheck = async (req: AuthRequest, res: Response): Promise<
       return
     }
 
-    const result = await checkWebsite(existing.url, existing.method, existing.timeout)
+    const result = await checkWebsite({
+      url: existing.url,
+      method: existing.method,
+      timeout: existing.timeout,
+      keywordCheck: existing.keywordCheck,
+      keywordType: existing.keywordType,
+    })
 
     const history = await prisma.websiteHistory.create({
       data: {

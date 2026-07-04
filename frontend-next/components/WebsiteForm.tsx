@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import Tooltip from './Tooltip'
 
 interface WebsiteFormProps {
-  siteForm: { name: string; url: string; method: string; tags: string; checkInterval?: string }
+  siteForm: { name: string; url: string; method: string; tags: string; checkInterval?: string; keywordCheck?: string; keywordType?: string }
   loading: boolean
   onSubmit: (e: FormEvent<HTMLFormElement>) => void
   onChange: (field: string, value: string) => void
@@ -66,7 +66,7 @@ export default function WebsiteForm({ siteForm, loading, onSubmit, onChange }: W
         </select>
       </label>
 
-      <label className="mb-4 block text-sm font-medium text-slate-700">
+      <label className="mb-3 block text-sm font-medium text-slate-700">
         Tags
         <input
           value={siteForm.tags}
@@ -74,6 +74,26 @@ export default function WebsiteForm({ siteForm, loading, onSubmit, onChange }: W
           className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
           placeholder="prod, api"
         />
+      </label>
+
+      <label className="mb-3 block text-sm font-medium text-slate-700">
+        Keyword Check
+        <div className="mt-1.5 flex gap-2">
+          <select
+            value={siteForm.keywordType || 'CONTAINS'}
+            onChange={(e) => onChange('keywordType', e.target.value)}
+            className="h-10 w-28 shrink-0 rounded-lg border border-slate-300 px-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+          >
+            <option value="CONTAINS">Contains</option>
+            <option value="NOT_CONTAINS">Not contains</option>
+          </select>
+          <input
+            value={siteForm.keywordCheck || ''}
+            onChange={(e) => onChange('keywordCheck', e.target.value)}
+            className="h-10 flex-1 rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+            placeholder="uptime (leave empty to skip)"
+          />
+        </div>
       </label>
 
       <Tooltip text="Add a new website to monitor">

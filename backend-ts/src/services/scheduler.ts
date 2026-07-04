@@ -19,7 +19,13 @@ async function checkDueWebsites() {
       if (elapsed < intervalMs) continue
 
       try {
-        const result = await checkWebsite(site.url, site.method, site.timeout)
+        const result = await checkWebsite({
+          url: site.url,
+          method: site.method,
+          timeout: site.timeout,
+          keywordCheck: site.keywordCheck,
+          keywordType: site.keywordType,
+        })
 
         await prisma.websiteHistory.create({
           data: {

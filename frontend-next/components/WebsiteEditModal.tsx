@@ -10,6 +10,8 @@ interface WebsiteData {
   checkInterval: number
   timeout: number
   tags: string[]
+  keywordCheck?: string | null
+  keywordType?: string | null
 }
 
 interface Props {
@@ -26,6 +28,8 @@ export default function WebsiteEditModal({ website, onClose, onSaved }: Props) {
     checkInterval: String(website.checkInterval),
     timeout: String(website.timeout),
     tags: website.tags.join(', '),
+    keywordCheck: website.keywordCheck || '',
+    keywordType: website.keywordType || 'CONTAINS',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -50,6 +54,8 @@ export default function WebsiteEditModal({ website, onClose, onSaved }: Props) {
           checkInterval: Number(form.checkInterval),
           timeout: Number(form.timeout),
           tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
+          keywordCheck: form.keywordCheck.trim() || null,
+          keywordType: form.keywordCheck.trim() ? form.keywordType : null,
         }),
       })
       if (!res.ok) {
@@ -146,6 +152,26 @@ export default function WebsiteEditModal({ website, onClose, onSaved }: Props) {
               />
             </label>
           </div>
+
+          <label className="block text-sm font-medium text-slate-700">
+            Keyword Check
+            <div className="mt-1.5 flex gap-2">
+              <select
+                value={form.keywordType}
+                onChange={(e) => setForm({ ...form, keywordType: e.target.value })}
+                className="h-10 w-28 shrink-0 rounded-lg border border-slate-300 px-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+              >
+                <option value="CONTAINS">Contains</option>
+                <option value="NOT_CONTAINS">Not contains</option>
+              </select>
+              <input
+                value={form.keywordCheck}
+                onChange={(e) => setForm({ ...form, keywordCheck: e.target.value })}
+                className="h-10 flex-1 rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                placeholder="uptime (leave empty to skip)"
+              />
+            </div>
+          </label>
 
           {error && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">

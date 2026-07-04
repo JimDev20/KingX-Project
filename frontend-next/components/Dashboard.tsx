@@ -33,6 +33,7 @@ interface Website {
   id: string; name: string; url: string; method: string; checkInterval: number
   timeout: number; status: string
   lastChecked: string | null; responseTime: number | null; uptime: number; tags: string[]
+  keywordCheck?: string | null; keywordType?: string | null
 }
 interface Stats {
   totalSites: number; upSites: number; downSites: number
@@ -67,7 +68,7 @@ function DashboardInner() {
   })
   const [authForm, setAuthForm] = useState({ fullName: '', email: '', password: '' })
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
-  const [siteForm, setSiteForm] = useState({ name: '', url: '', method: 'GET', tags: '', checkInterval: '300' })
+  const [siteForm, setSiteForm] = useState({ name: '', url: '', method: 'GET', tags: '', checkInterval: '300', keywordCheck: '', keywordType: 'CONTAINS' })
   const [websites, setWebsites] = useState<Website[]>([])
   const [stats, setStats] = useState<Stats>(emptyStats)
   const [search, setSearch] = useState('')
@@ -141,14 +142,17 @@ function DashboardInner() {
   const handleCreateWebsite = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true); setMessage('')
     try {
+      const keywordCheck = siteForm.keywordCheck.trim() || null
       await request('/websites', { method: 'POST', headers: authHeaders, body: JSON.stringify({
         name: siteForm.name,
         url: siteForm.url,
         method: siteForm.method,
         checkInterval: Number(siteForm.checkInterval),
+        keywordCheck,
+        keywordType: keywordCheck ? siteForm.keywordType : null,
         tags: siteForm.tags.split(',').map(t => t.trim()).filter(Boolean),
       }) })
-      setSiteForm({ name: '', url: '', method: 'GET', tags: '', checkInterval: '300' }); await loadDashboard()
+      setSiteForm({ name: '', url: '', method: 'GET', tags: '', checkInterval: '300', keywordCheck: '', keywordType: 'CONTAINS' }); await loadDashboard()
     } catch (err) { setMessage(err instanceof Error ? err.message : 'Failed') }
     finally { setLoading(false) }
   }

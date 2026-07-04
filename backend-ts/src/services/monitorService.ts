@@ -1,4 +1,4 @@
-import { CheckMethod, WebsiteStatus } from '@prisma/client'
+import { CheckMethod, WebsiteStatus, KeywordCheckType } from '@prisma/client'
 
 export interface MonitorResult {
   status: WebsiteStatus
@@ -7,11 +7,16 @@ export interface MonitorResult {
   error?: string
 }
 
-export const checkWebsite = async (
-  url: string,
-  method: CheckMethod,
-  timeout: number,
-): Promise<MonitorResult> => {
+interface CheckOptions {
+  url: string
+  method: CheckMethod
+  timeout: number
+  keywordCheck?: string | null
+  keywordType?: KeywordCheckType | null
+}
+
+export const checkWebsite = async (options: CheckOptions): Promise<MonitorResult> => {
+  const { url, method, timeout, keywordCheck, keywordType } = options
   const startedAt = Date.now()
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeout)
@@ -23,11 +28,38 @@ export const checkWebsite = async (
       redirect: 'follow',
     })
 
+    const responseTime = Date.now() - startedAt
+
+    if (!response.ok) {
+      return {
+        status: 'DOWN',
+        responseTime,
+        statusCode: response.status,
+        error: `HTTP ${response.status}`,
+      }
+    }
+
+    if (keywordCheck && keywordType) {
+      const body = await response.text()
+      const found = body.includes(keywordCheck)
+      const passed = keywordType === 'CONTAINS' ? found : !found
+
+      if (!passed) {
+        return {
+          status: 'DOWN',
+          responseTime,
+          statusCode: response.status,
+          error: keywordType === 'CONTAINS'
+            ? `Keyword "${keywordCheck}" not found in response`
+            : `Keyword "${keywordCheck}" unexpectedly found in response`,
+        }
+      }
+    }
+
     return {
-      status: response.ok ? 'UP' : 'DOWN',
-      responseTime: Date.now() - startedAt,
+      status: 'UP',
+      responseTime,
       statusCode: response.status,
-      error: response.ok ? undefined : `HTTP ${response.status}`,
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Request failed'
