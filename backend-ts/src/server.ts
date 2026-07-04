@@ -18,8 +18,16 @@ const app = express()
 const PORT = process.env.PORT || 8080
 const corsOrigin = process.env.CORS_ORIGIN
 
+const allowedOrigins = corsOrigin ? corsOrigin.split(',').map((o) => o.trim()).filter(Boolean) : []
+
 app.use(cors({
-  origin: corsOrigin ? corsOrigin.split(',').map((origin) => origin.trim()) : true,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.length === 0) return callback(null, true)
+    if (allowedOrigins.includes(origin)) return callback(null, true)
+    if (origin.endsWith('.vercel.app')) return callback(null, true)
+    if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) return callback(null, true)
+    callback(null, true)
+  },
   credentials: true,
 }))
 app.use(express.json())
