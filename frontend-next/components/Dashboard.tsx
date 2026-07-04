@@ -5,6 +5,7 @@ import {
   Activity, AlertCircle, AlertTriangle, BarChart3, Bell, CheckCircle2, Clock3, Code2, FileText,
   Globe2, History, Home, LayoutDashboard, Loader2, LogOut, Menu, Moon, Shield, Settings, Sun, Users, Webhook, Wrench, X,
 } from 'lucide-react'
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts'
 import StatCard from './StatCard'
 import WebsiteForm from './WebsiteForm'
 import WebsiteTable from './WebsiteTable'
@@ -87,6 +88,7 @@ function DashboardInner() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [analyticsHistory, setAnalyticsHistory] = useState<{ time: string; ms: number }[]>([])
   const [pageKey, setPageKey] = useState(0)
 
   const authHeaders = useMemo(() => ({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }), [token])
@@ -122,6 +124,23 @@ function DashboardInner() {
   useEffect(() => {
     setPageKey(k => k + 1)
   }, [currentPage])
+
+  useEffect(() => {
+    if (currentPage !== 'analytics' || websites.length === 0) return
+    const first = websites[0]
+    const base = API_URL
+    const t = token
+    fetch(`${base}/websites/${first.id}/history?limit=50`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json())
+      .then(d => {
+        const h = (d.history || []).reverse()
+        setAnalyticsHistory(h.filter((e: { responseTime: number | null }) => e.responseTime != null).map((e: { timestamp: string; responseTime: number }) => ({
+          time: new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          ms: e.responseTime,
+        })))
+      })
+      .catch(() => {})
+  }, [currentPage, websites, token])
 
   const handleAuth = async (e: React.FormEvent): Promise<boolean> => {
     e.preventDefault(); setLoading(true); setMessage('')
@@ -351,18 +370,39 @@ function DashboardInner() {
             )}
 
             {websites.length > 0 && (
-              <div className="rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-sm p-5 dark:border-slate-700/80 dark:bg-slate-900/80">
-                <p className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-300">Response Time History</p>
-                <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">Click a website below to view its detailed response time chart over the last 24 hours</p>
-                <div className="flex flex-wrap gap-2">
-                  {websites.slice(0, 10).map(s => (
-                    <button key={s.id} onClick={() => setSelectedWebsite({ id: s.id, name: s.name })}
-                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:text-slate-300 dark:hover:border-indigo-800 dark:hover:bg-indigo-900/20">
-                      {s.name}
-                    </button>
-                  ))}
+              <>
+                <div className="rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-sm p-5 dark:border-slate-700/80 dark:bg-slate-900/80">
+                  <p className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-300">Response Time Chart</p>
+                  {analyticsHistory.length > 1 ? (
+                    <div className="h-72">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={analyticsHistory} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis dataKey="time" tick={{ fontSize: 11 }} stroke="#94a3b8" />
+                          <YAxis tick={{ fontSize: 11 }} stroke="#94a3b8" unit="ms" />
+                          <RechartsTooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                          <Line type="monotone" dataKey="ms" stroke="#6366f1" strokeWidth={2} dot={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <p className="py-6 text-center text-sm text-slate-400">Not enough response time data yet</p>
+                  )}
+                  <p className="mt-3 text-xs text-slate-400">Showing data for <span className="font-semibold text-slate-600 dark:text-slate-300">{websites[0]?.name}</span></p>
                 </div>
-              </div>
+                <div className="rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-sm p-5 dark:border-slate-700/80 dark:bg-slate-900/80">
+                  <p className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-300">Response Time History</p>
+                  <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">Click a website below to view its detailed response time chart over the last 24 hours</p>
+                  <div className="flex flex-wrap gap-2">
+                    {websites.slice(0, 10).map(s => (
+                      <button key={s.id} onClick={() => setSelectedWebsite({ id: s.id, name: s.name })}
+                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:text-slate-300 dark:hover:border-indigo-800 dark:hover:bg-indigo-900/20">
+                        {s.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
           </div>
         )
