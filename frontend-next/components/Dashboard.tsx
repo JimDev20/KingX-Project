@@ -292,16 +292,65 @@ function DashboardInner() {
       case 'analytics':
         return (
           <div className="space-y-6">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Analytics</h2>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Analytics</h2>
+              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Performance overview and response time history</p>
+            </div>
+
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               <StatCard icon={<Tooltip text="Total monitored websites"><Globe2 className="h-5 w-5" /></Tooltip>} label="Total Sites" value={stats.totalSites} tone="indigo" />
               <StatCard icon={<Tooltip text="Overall uptime across all websites"><CheckCircle2 className="h-5 w-5" /></Tooltip>} label="Uptime" value={`${stats.uptime}%`} tone="emerald" />
               <StatCard icon={<Tooltip text="Websites currently down"><AlertTriangle className="h-5 w-5" /></Tooltip>} label="Down" value={stats.downSites} tone="red" />
               <StatCard icon={<Tooltip text="Average response time"><Clock3 className="h-5 w-5" /></Tooltip>} label="Avg Response" value={`${stats.averageResponseTime}ms`} tone="amber" />
             </div>
+
+            {stats.totalSites > 0 && (
+              <div className="rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-sm p-5 dark:border-slate-700/80 dark:bg-slate-900/80">
+                <p className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-300">Website Status Overview</p>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {websites.slice(0, 12).map(s => {
+                    const isUp = s.status === 'UP'
+                    const isDown = s.status === 'DOWN'
+                    return (
+                      <button key={s.id} onClick={() => setSelectedWebsite({ id: s.id, name: s.name })}
+                        className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all hover:shadow-md ${
+                          isDown
+                            ? 'border-red-200 bg-red-50/50 hover:border-red-300 dark:border-red-800/50 dark:bg-red-900/10'
+                            : 'border-slate-200 bg-white hover:border-indigo-200 dark:border-slate-700 dark:bg-slate-800/50 dark:hover:border-indigo-700'
+                        }`}>
+                        <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${
+                          isUp ? 'bg-emerald-100 text-emerald-600' :
+                          isDown ? 'bg-red-100 text-red-600' :
+                          'bg-amber-100 text-amber-600'
+                        }`}>
+                          {isUp ? <CheckCircle2 className="h-5 w-5" /> :
+                           isDown ? <AlertTriangle className="h-5 w-5" /> :
+                           <Clock3 className="h-5 w-5" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{s.name}</p>
+                          <div className="mt-0.5 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                            <span className={`font-semibold ${isUp ? 'text-emerald-600' : isDown ? 'text-red-600' : 'text-amber-600'}`}>
+                              {s.status}
+                            </span>
+                            <span>{s.uptime.toFixed(1)}% uptime</span>
+                            {s.responseTime && <span>{s.responseTime}ms</span>}
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+                {websites.length > 12 && (
+                  <p className="mt-3 text-center text-xs text-slate-400">+{websites.length - 12} more sites</p>
+                )}
+              </div>
+            )}
+
             {websites.length > 0 && (
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <p className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-300">Select a website to view its response time history over the last 24 hours</p>
+              <div className="rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-sm p-5 dark:border-slate-700/80 dark:bg-slate-900/80">
+                <p className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-300">Response Time History</p>
+                <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">Click a website below to view its detailed response time chart over the last 24 hours</p>
                 <div className="flex flex-wrap gap-2">
                   {websites.slice(0, 10).map(s => (
                     <button key={s.id} onClick={() => setSelectedWebsite({ id: s.id, name: s.name })}
