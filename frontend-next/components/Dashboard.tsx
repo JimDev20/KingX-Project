@@ -295,9 +295,7 @@ function DashboardInner() {
       label: 'Monitor',
       items: [
         { id: 'home', label: 'Home', icon: Home },
-        { id: 'websites', label: 'Websites', icon: Globe2 },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-        { id: 'alerts', label: 'Alerts', icon: Bell },
         { id: 'team', label: 'Team', icon: Users },
         { id: 'maintenance', label: 'Maintenance', icon: Wrench },
         { id: 'incidents', label: 'Incidents', icon: AlertCircle },
@@ -317,6 +315,8 @@ function DashboardInner() {
       label: 'Integrations',
       items: [
         { id: 'webhooks', label: 'Webhooks', icon: Webhook },
+        { id: 'websites', label: 'Websites', icon: Globe2 },
+        { id: 'alerts', label: 'Alerts', icon: Bell },
         ...(user.role === 'SUPERADMIN' ? [{ id: 'admin' as Page, label: 'Admin', icon: Shield, badge: 'Super', badgeColor: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' }] : []),
       ],
     },
