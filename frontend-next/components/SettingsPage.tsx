@@ -7,7 +7,7 @@ import Tooltip from './Tooltip'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
-interface Props { onClose: () => void }
+interface Props { onClose?: () => void; inline?: boolean }
 
 interface ApiKeyItem {
   id: string
@@ -29,7 +29,7 @@ async function req<T>(p: string, opts: RequestInit = {}): Promise<T> {
   return d as T
 }
 
-export default function SettingsPage({ onClose }: Props) {
+export default function SettingsPage({ onClose, inline }: Props) {
   const { theme, toggleTheme } = useTheme()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -98,20 +98,17 @@ export default function SettingsPage({ onClose }: Props) {
     catch (ex) { setMsg(ex instanceof Error ? ex.message : 'Failed') }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
-          <div className="flex items-center gap-3">
-            <Settings className="h-5 w-5 text-indigo-600" />
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Settings</h2>
-          </div>
-          <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800">
-            <X className="h-5 w-5" />
-          </button>
+  const content = (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+        <div className="flex items-center gap-3">
+          <Settings className="h-5 w-5 text-indigo-600" />
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Settings</h2>
         </div>
+        {onClose && <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button>}
+      </div>
 
-        <div className="flex gap-1 border-b border-slate-200 px-6 pt-4 dark:border-slate-700">
+      <div className="flex gap-1 border-b border-slate-200 px-6 pt-4 dark:border-slate-700">
           {(['profile', 'security'] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)}
               className={`rounded-t-lg px-4 py-2 text-sm font-semibold capitalize transition ${
@@ -264,6 +261,12 @@ export default function SettingsPage({ onClose }: Props) {
           )}
         </div>
       </div>
+  )
+
+  if (inline) return content
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">{content}</div>
     </div>
   )
 }

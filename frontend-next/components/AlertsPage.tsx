@@ -27,7 +27,8 @@ interface Alert {
 }
 
 interface Props {
-  onClose: () => void
+  onClose?: () => void
+  inline?: boolean
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -41,7 +42,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return payload as T
 }
 
-export default function AlertsPage({ onClose }: Props) {
+export default function AlertsPage({ onClose, inline }: Props) {
   const [rules, setRules] = useState<AlertRule[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [loading, setLoading] = useState(true)
@@ -112,42 +113,40 @@ export default function AlertsPage({ onClose }: Props) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Bell className="h-5 w-5 text-indigo-600" />
-            <h2 className="text-lg font-bold text-slate-900">Alerts</h2>
-          </div>
-          <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
-            <X className="h-5 w-5" />
+  const content = (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+        <div className="flex items-center gap-3">
+          <Bell className="h-5 w-5 text-indigo-600" />
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Alerts</h2>
+        </div>
+        {onClose && <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button>}
+      </div>
+
+      <div className="flex gap-1 border-b border-slate-200 px-6 pt-4 dark:border-slate-700">
+        {(['rules', 'history'] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`rounded-t-lg px-4 py-2 text-sm font-semibold capitalize transition ${
+              tab === t ? 'border-x border-t border-slate-200 bg-white text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+            }`}
+          >
+            {t === 'rules' ? 'Alert Rules' : 'History'}
           </button>
-        </div>
+        ))}
+      </div>
 
-        <div className="flex gap-1 border-b border-slate-200 px-6 pt-4">
-          {(['rules', 'history'] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`rounded-t-lg px-4 py-2 text-sm font-semibold capitalize transition ${
-                tab === t ? 'border-x border-t border-slate-200 bg-white text-indigo-600' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              {t === 'rules' ? 'Alert Rules' : 'History'}
-            </button>
-          ))}
-        </div>
+      <div className="p-6">
+        {message && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400">{message}</div>
+        )}
 
-        <div className="p-6">
-          {message && (
-            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">{message}</div>
-          )}
-
-          {loading ? (
-            <div className="grid place-items-center py-12"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div>
-          ) : tab === 'rules' ? (
-            <div className="space-y-4">
+        {loading ? (
+          <div className="grid place-items-center py-12"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div>
+        ) : tab === 'rules' ? (
+          <div className="space-y-4">
+            <Tooltip text="Create a new alert rule to get notified when a website goes down">
               <button
                 onClick={() => setShowForm(!showForm)}
                 className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
@@ -155,6 +154,7 @@ export default function AlertsPage({ onClose }: Props) {
                 <Plus className="h-4 w-4" />
                 New Alert Rule
               </button>
+            </Tooltip>
 
               {showForm && (
                 <form onSubmit={handleCreateRule} className="rounded-xl border border-slate-200 p-4 space-y-3">
@@ -279,6 +279,12 @@ export default function AlertsPage({ onClose }: Props) {
           )}
         </div>
       </div>
+  )
+
+  if (inline) return content
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">{content}</div>
     </div>
   )
 }

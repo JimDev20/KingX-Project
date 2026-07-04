@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Activity, Globe2, Shield, Users, X, Loader2, Search } from 'lucide-react'
+import Tooltip from './Tooltip'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
@@ -23,7 +24,8 @@ interface AdminUser {
 }
 
 interface Props {
-  onClose: () => void
+  onClose?: () => void
+  inline?: boolean
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -37,7 +39,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return payload as T
 }
 
-export default function AdminPage({ onClose }: Props) {
+export default function AdminPage({ onClose, inline }: Props) {
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
@@ -78,20 +80,17 @@ export default function AdminPage({ onClose }: Props) {
     ? users.filter((u) => u.email.toLowerCase().includes(search.toLowerCase()) || u.fullName?.toLowerCase().includes(search.toLowerCase()))
     : users
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="max-h-[85vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Shield className="h-5 w-5 text-indigo-600" />
-            <h2 className="text-lg font-bold text-slate-900">Admin Panel</h2>
-          </div>
-          <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
-            <X className="h-5 w-5" />
-          </button>
+  const content = (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+        <div className="flex items-center gap-3">
+          <Shield className="h-5 w-5 text-indigo-600" />
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Admin Panel</h2>
         </div>
+        {onClose && <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button>}
+      </div>
 
-        <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6">
           {message && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">{message}</div>
           )}
@@ -140,7 +139,7 @@ export default function AdminPage({ onClose }: Props) {
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       className="h-9 w-56 rounded-lg border border-slate-300 pl-9 pr-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                      placeholder="Search users..."
+                      placeholder="Search users by name or email"
                     />
                   </div>
                 </div>
@@ -178,15 +177,17 @@ export default function AdminPage({ onClose }: Props) {
                           </td>
                           <td className="px-4 py-3 text-slate-500">{new Date(u.createdAt).toLocaleDateString()}</td>
                           <td className="px-4 py-3">
-                            <select
-                              value={u.role}
-                              onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                              className="h-8 rounded-lg border border-slate-300 px-2 text-xs outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                            >
-                              <option value="USER">USER</option>
-                              <option value="ADMIN">ADMIN</option>
-                              <option value="SUPERADMIN">SUPERADMIN</option>
-                            </select>
+                            <Tooltip text="Change this user's role">
+                              <select
+                                value={u.role}
+                                onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                                className="h-8 rounded-lg border border-slate-300 px-2 text-xs outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                              >
+                                <option value="USER">USER</option>
+                                <option value="ADMIN">ADMIN</option>
+                                <option value="SUPERADMIN">SUPERADMIN</option>
+                              </select>
+                            </Tooltip>
                           </td>
                         </tr>
                       ))}
@@ -208,6 +209,12 @@ export default function AdminPage({ onClose }: Props) {
           )}
         </div>
       </div>
+  )
+
+  if (inline) return content
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="max-h-[85vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">{content}</div>
     </div>
   )
 }

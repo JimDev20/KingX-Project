@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Calendar, Clock, Plus, X, Loader2, Trash2, Wrench } from 'lucide-react'
+import Tooltip from './Tooltip'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
@@ -15,7 +16,7 @@ interface MWindow {
   website: { name: string; url: string }
 }
 
-interface Props { onClose: () => void }
+interface Props { onClose?: () => void; inline?: boolean }
 
 async function req<T>(p: string, opts: RequestInit = {}): Promise<T> {
   const t = localStorage.getItem('kingx_token')
@@ -28,7 +29,7 @@ async function req<T>(p: string, opts: RequestInit = {}): Promise<T> {
   return d as T
 }
 
-export default function MaintenancePage({ onClose }: Props) {
+export default function MaintenancePage({ onClose, inline }: Props) {
   const [items, setItems] = useState<MWindow[]>([])
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
@@ -65,25 +66,24 @@ export default function MaintenancePage({ onClose }: Props) {
 
   const now = new Date()
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
-          <div className="flex items-center gap-3">
-            <Wrench className="h-5 w-5 text-indigo-600" />
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Maintenance Windows</h2>
-          </div>
-          <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800">
-            <X className="h-5 w-5" />
-          </button>
+  const content = (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+        <div className="flex items-center gap-3">
+          <Wrench className="h-5 w-5 text-indigo-600" />
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Maintenance Windows</h2>
         </div>
+        {onClose && <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button>}
+      </div>
 
-        <div className="p-6 space-y-4">
-          {msg && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400">{msg}</div>}
+      <div className="p-6 space-y-4">
+        {msg && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400">{msg}</div>}
 
+        <Tooltip text="Schedule a maintenance window to suppress alerts during planned work">
           <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700">
             <Plus className="h-4 w-4" /> Schedule Maintenance
           </button>
+        </Tooltip>
 
           {showForm && (
             <form onSubmit={create} className="space-y-3 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
@@ -98,7 +98,9 @@ export default function MaintenancePage({ onClose }: Props) {
                 <input value={form.endsAt} onChange={(e) => setForm({ ...form, endsAt: e.target.value })} type="datetime-local" required
                   className="h-10 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white" />
               </div>
-              <button type="submit" className="h-10 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700">Create</button>
+              <Tooltip text="Create this maintenance window">
+                <button type="submit" className="h-10 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700">Create</button>
+              </Tooltip>
             </form>
           )}
 
@@ -133,9 +135,11 @@ export default function MaintenancePage({ onClose }: Props) {
                         {m.website?.name || 'Unknown site'} &middot; <Calendar className="inline h-3 w-3" /> {new Date(m.startsAt).toLocaleString()} &mdash; {new Date(m.endsAt).toLocaleString()}
                       </p>
                     </div>
-                    <button onClick={() => remove(m.id)} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-red-200 text-red-600 transition hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/30">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <Tooltip text="Delete this maintenance window">
+                      <button onClick={() => remove(m.id)} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-red-200 text-red-600 transition hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/30">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </Tooltip>
                   </div>
                 )
               })}
@@ -143,6 +147,12 @@ export default function MaintenancePage({ onClose }: Props) {
           )}
         </div>
       </div>
+  )
+
+  if (inline) return content
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">{content}</div>
     </div>
   )
 }

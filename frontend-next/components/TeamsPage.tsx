@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Users, Plus, X, Loader2, UserPlus, Trash2, UserMinus, Shield, ShieldCheck, UserCog } from 'lucide-react'
+import Tooltip from './Tooltip'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
@@ -20,7 +21,8 @@ interface TeamMember {
 }
 
 interface Props {
-  onClose: () => void
+  onClose?: () => void
+  inline?: boolean
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -45,7 +47,7 @@ const roleBadge: Record<string, string> = {
   VIEWER: 'bg-amber-100 text-amber-700 border-amber-200',
 }
 
-export default function TeamsPage({ onClose }: Props) {
+export default function TeamsPage({ onClose, inline }: Props) {
   const [teams, setTeams] = useState<Team[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
@@ -118,20 +120,18 @@ export default function TeamsPage({ onClose }: Props) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Users className="h-5 w-5 text-indigo-600" />
-            <h2 className="text-lg font-bold text-slate-900">Teams</h2>
-          </div>
-          <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
-            <X className="h-5 w-5" />
-          </button>
+  const content = (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+        <div className="flex items-center gap-3">
+          <Users className="h-5 w-5 text-indigo-600" />
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Teams</h2>
         </div>
+        {onClose && <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button>}
+      </div>
 
-        <div className="p-6 space-y-4">
+      <div className="p-6 space-y-4">
+        <Tooltip text="Create a new team to collaborate with others">
           <button
             onClick={() => setShowCreate(!showCreate)}
             className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
@@ -139,6 +139,7 @@ export default function TeamsPage({ onClose }: Props) {
             <Plus className="h-4 w-4" />
             Create Team
           </button>
+        </Tooltip>
 
           {showCreate && (
             <form onSubmit={handleCreateTeam} className="flex gap-3">
@@ -253,6 +254,12 @@ export default function TeamsPage({ onClose }: Props) {
           )}
         </div>
       </div>
+  )
+
+  if (inline) return content
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">{content}</div>
     </div>
   )
 }

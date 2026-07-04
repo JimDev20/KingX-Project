@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { AlertTriangle, CheckCircle2, Clock, Loader2, X } from 'lucide-react'
+import Tooltip from './Tooltip'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
@@ -16,7 +17,7 @@ interface Incident {
   website: { name: string; url: string }
 }
 
-interface Props { onClose: () => void }
+interface Props { onClose?: () => void; inline?: boolean }
 
 async function req<T>(p: string, opts: RequestInit = {}): Promise<T> {
   const t = localStorage.getItem('kingx_token')
@@ -29,7 +30,7 @@ async function req<T>(p: string, opts: RequestInit = {}): Promise<T> {
   return d as T
 }
 
-export default function IncidentsPage({ onClose }: Props) {
+export default function IncidentsPage({ onClose, inline }: Props) {
   const [items, setItems] = useState<Incident[]>([])
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
@@ -49,20 +50,17 @@ export default function IncidentsPage({ onClose }: Props) {
 
   useEffect(() => { void load() }, [page])
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-600" />
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Incidents</h2>
-          </div>
-          <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800">
-            <X className="h-5 w-5" />
-          </button>
+  const content = (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+        <div className="flex items-center gap-3">
+          <AlertTriangle className="h-5 w-5 text-red-600" />
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Incidents</h2>
         </div>
+        {onClose && <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button>}
+      </div>
 
-        <div className="p-6">
+      <div className="p-6">
           {msg && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">{msg}</div>}
 
           {loading ? (
@@ -103,15 +101,25 @@ export default function IncidentsPage({ onClose }: Props) {
 
               {total > pageSize && (
                 <div className="flex items-center justify-center gap-2 pt-4">
-                  <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm disabled:opacity-40 dark:border-slate-600">Prev</button>
+                  <Tooltip text="Go to previous page">
+                    <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm disabled:opacity-40 dark:border-slate-600">Prev</button>
+                  </Tooltip>
                   <span className="text-sm text-slate-500">Page {page} of {Math.ceil(total / pageSize)}</span>
-                  <button disabled={page >= Math.ceil(total / pageSize)} onClick={() => setPage(page + 1)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm disabled:opacity-40 dark:border-slate-600">Next</button>
+                  <Tooltip text="Go to next page">
+                    <button disabled={page >= Math.ceil(total / pageSize)} onClick={() => setPage(page + 1)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm disabled:opacity-40 dark:border-slate-600">Next</button>
+                  </Tooltip>
                 </div>
               )}
             </div>
           )}
         </div>
       </div>
+  )
+
+  if (inline) return content
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">{content}</div>
     </div>
   )
 }
