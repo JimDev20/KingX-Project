@@ -233,6 +233,14 @@ function DashboardInner() {
       case 'home':
         return (
           <section className="space-y-6">
+            <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-r from-indigo-500/5 via-purple-500/5 to-pink-500/5 p-5 dark:border-slate-700/80 dark:from-indigo-500/10 dark:via-purple-500/10 dark:to-pink-500/10">
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white">Welcome back, {user.fullName?.split(' ')[0] || 'there'}</h1>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {stats.totalSites > 0
+                  ? `Monitoring ${stats.totalSites} website${stats.totalSites > 1 ? 's' : ''} — ${stats.upSites} up, ${stats.downSites} down`
+                  : 'Add your first website below to start monitoring'}
+              </p>
+            </div>
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               <StatCard icon={<Tooltip text="Total monitored websites"><Globe2 className="h-5 w-5" /></Tooltip>} label="Total Sites" value={stats.totalSites} tone="indigo" />
               <StatCard icon={<Tooltip text="Overall uptime across all websites"><CheckCircle2 className="h-5 w-5" /></Tooltip>} label="Uptime" value={`${stats.uptime}%`} tone="emerald" />

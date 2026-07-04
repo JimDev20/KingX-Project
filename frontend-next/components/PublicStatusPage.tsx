@@ -126,7 +126,7 @@ export default function PublicStatusPage({ slug }: Props) {
                     site.status === 'DOWN' ? 'bg-red-100 text-red-700' :
                     'bg-amber-100 text-amber-700'
                   }`}>
-                    {site.status === 'up' ? 'Operational' : site.status === 'down' ? 'Down' : 'Pending'}
+                    {site.status === 'UP' ? 'Operational' : site.status === 'DOWN' ? 'Down' : 'Pending'}
                   </span>
                   <p className="mt-1 text-xs text-slate-400">
                     {site.uptime.toFixed(1)}% uptime
