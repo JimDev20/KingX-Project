@@ -59,8 +59,8 @@ export default function TeamsPage({ onClose, inline }: Props) {
   const loadTeams = async () => {
     setLoading(true)
     try {
-      const data = await request<Team[]>('/teams')
-      setTeams(data)
+      const data = await request<{ teams: Team[] }>('/teams')
+      setTeams(data.teams)
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Failed to load teams')
     } finally {
