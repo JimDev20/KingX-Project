@@ -236,8 +236,22 @@ model Incident {
   createdAt DateTime      @default(now())
   website   Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
 
+  updates IncidentUpdate[]
+
   @@index([websiteId, startedAt])
   @@map("incidents")
+}
+
+model IncidentUpdate {
+  id         String   @id @default(cuid())
+  incidentId String
+  message    String
+  status     String   @default("UPDATED")
+  createdAt  DateTime @default(now())
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId, createdAt])
+  @@map("incident_updates")
 }
 
 model MaintenanceWindow {

@@ -100,3 +100,65 @@ export const resolve = async (req: AuthRequest, res: Response): Promise<void> =>
     res.status(500).json({ error: 'Internal server error' })
   }
 }
+
+export const addUpdate = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const incident = await prisma.incident.findFirst({
+      where: {
+        id: req.params.id as string,
+        website: websiteAccessWhere(req.userId!),
+      },
+    })
+
+    if (!incident) {
+      res.status(404).json({ error: 'Incident not found' })
+      return
+    }
+
+    const message = typeof req.body.message === 'string' ? req.body.message.trim() : ''
+
+    if (!message) {
+      res.status(400).json({ error: 'Message is required' })
+      return
+    }
+
+    const update = await prisma.incidentUpdate.create({
+      data: {
+        incidentId: incident.id,
+        message,
+        status: req.body.status || 'UPDATED',
+      },
+    })
+
+    res.status(201).json({ update })
+  } catch (error) {
+    console.error('Add incident update error:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+export const getUpdates = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const incident = await prisma.incident.findFirst({
+      where: {
+        id: req.params.id as string,
+        website: websiteAccessWhere(req.userId!),
+      },
+    })
+
+    if (!incident) {
+      res.status(404).json({ error: 'Incident not found' })
+      return
+    }
+
+    const updates = await prisma.incidentUpdate.findMany({
+      where: { incidentId: incident.id },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    res.json({ updates })
+  } catch (error) {
+    console.error('Get incident updates error:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
