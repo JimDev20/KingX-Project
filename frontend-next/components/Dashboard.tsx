@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  Activity, AlertCircle, AlertTriangle, BarChart3, Bell, BookOpen, CheckCircle2, Clock3, FileText,
+  Activity, AlertCircle, AlertTriangle, BarChart3, Bell, CheckCircle2, Clock3, FileText,
   Globe2, History, Home, Loader2, LogOut, Menu, Moon, Shield, Settings, Sun, Users, Webhook, Wrench, X,
 } from 'lucide-react'
 import StatCard from './StatCard'
@@ -25,7 +25,6 @@ import SslMonitorPage from './SslMonitorPage'
 import ReportsPage from './ReportsPage'
 import AuditLogPage from './AuditLogPage'
 import WebhooksPage from './WebhooksPage'
-import ApiDocsPage from './ApiDocsPage'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
@@ -49,13 +48,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return payload as T
 }
 
-type Page = 'home' | 'websites' | 'analytics' | 'alerts' | 'team' | 'maintenance' | 'incidents' | 'settings' | 'notifications' | 'ssl' | 'reports' | 'audit' | 'webhooks' | 'apidocs' | 'admin'
+type Page = 'home' | 'websites' | 'analytics' | 'alerts' | 'team' | 'maintenance' | 'incidents' | 'settings' | 'notifications' | 'ssl' | 'reports' | 'audit' | 'webhooks' | 'admin'
 
 const pageLabels: Record<Page, string> = {
   home: 'Home', websites: 'Websites', analytics: 'Analytics', alerts: 'Alerts',
   team: 'Team', maintenance: 'Maintenance', incidents: 'Incidents', settings: 'Settings',
   notifications: 'Notifications', ssl: 'SSL Monitor', reports: 'Reports', audit: 'Audit Log',
-  webhooks: 'Webhooks', apidocs: 'API Docs', admin: 'Admin',
+  webhooks: 'Webhooks', admin: 'Admin',
 }
 
 function DashboardInner() {
@@ -284,8 +283,6 @@ function DashboardInner() {
         return <AuditLogPage inline />
       case 'webhooks':
         return <WebhooksPage inline />
-      case 'apidocs':
-        return <ApiDocsPage inline />
       case 'admin':
         return <AdminPage inline />
       default:
@@ -320,7 +317,6 @@ function DashboardInner() {
       label: 'Integrations',
       items: [
         { id: 'webhooks', label: 'Webhooks', icon: Webhook },
-        { id: 'apidocs', label: 'API Docs', icon: BookOpen },
         ...(user.role === 'SUPERADMIN' ? [{ id: 'admin' as Page, label: 'Admin', icon: Shield, badge: 'Super', badgeColor: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' }] : []),
       ],
     },
