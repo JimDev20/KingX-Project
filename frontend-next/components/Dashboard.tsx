@@ -429,21 +429,19 @@ function DashboardInner() {
           <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">KingX</span>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+        <nav className="flex-1 space-y-0.5 overflow-y-auto p-2">
           {navItems.map(item => {
             const Icon = item.icon
             const isActive = currentPage === item.id
             return (
-              <Tooltip key={item.id} text={`Navigate to ${item.label}`}>
-                <button onClick={() => nav(item.id)}
-                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all ${
-                    isActive ? 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 dark:from-indigo-900/30 dark:to-purple-900/30 dark:text-indigo-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
-                  }`}>
-                  <Icon className="h-5 w-5 shrink-0" />
-                  <span className="truncate">{item.label}</span>
-                  {item.badge && <span className={`ml-auto rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${item.badgeColor || 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>{item.badge}</span>}
-                </button>
-              </Tooltip>
+              <button key={item.id} onClick={() => nav(item.id)}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
+                  isActive ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                }`}>
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="truncate leading-none">{item.label}</span>
+                {item.badge && <span className={`ml-auto rounded-md px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${item.badgeColor || 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>{item.badge}</span>}
+              </button>
             )
           })}
         </nav>

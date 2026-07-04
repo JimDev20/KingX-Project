@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Calendar, Clock, Plus, X, Loader2, Trash2, Wrench } from 'lucide-react'
+import { Plus, X, Loader2, Trash2, Wrench } from 'lucide-react'
 import Tooltip from './Tooltip'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
@@ -132,7 +132,7 @@ export default function MaintenancePage({ onClose, inline }: Props) {
                         </span>
                       </div>
                       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        {m.website?.name || 'Unknown site'} &middot; <Calendar className="inline h-3 w-3" /> {new Date(m.startsAt).toLocaleString()} &mdash; {new Date(m.endsAt).toLocaleString()}
+                        {m.website?.name || 'Unknown site'} &middot; {new Date(m.startsAt).toLocaleString()} &mdash; {new Date(m.endsAt).toLocaleString()}
                       </p>
                     </div>
                     <Tooltip text="Delete this maintenance window">
