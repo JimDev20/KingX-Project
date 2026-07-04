@@ -1,75 +1,78 @@
-# 🚀 KingX Uptime Monitor
+# KingX Uptime Monitor
 
-A full-stack cloud-based website uptime monitoring system with real-time status updates, email alerts, and analytics.
+A full-stack cloud-based website uptime monitoring system with real-time status updates, team management, alerts, and analytics.
 
-## 🌐 Live Demo
+## Live Demo
 
-- **Frontend (vercel):** https://king-x-project.vercel.app/
-- **Backend API:** https://kingx-project.onrender.com/api/health
-- **Backend (Render): ** https://kingx-project.onrender.com/
+- **Frontend:** https://king-x-project-13kl.vercel.app/
+- **Backend API:** https://kingx-project1.onrender.com/api
 
-## 📋 Features
+## Features
 
-- ✅ User Registration & Login (JWT Authentication)
-- ✅ Add/Delete Websites
-- ✅ Real-time UP/DOWN Status
-- ✅ Email Alerts
-- ✅ Auto-refresh Dashboard
-- ✅ Uptime Percentage
-- ✅ Response Time Monitoring
-- ✅ History Log
-- ✅ Charts (Uptime Pie Chart)
-- ✅ Stats Cards
+- User registration & login (JWT authentication)
+- Add/edit/delete websites with configurable check methods
+- Real-time UP/DOWN/PENDING/MAINTENANCE status
+- Uptime percentage & response time history charts
+- Background scheduler (5-min checks) with maintenance window support
+- Alert rules (email, SMS, Slack, Discord) with enable/disable
+- Team management with roles (owner, admin, member, viewer)
+- API key management
+- Incident tracking & reporting
+- SSL certificate monitor
+- Webhook endpoints with event type selection
+- Audit log with activity history
+- Public status pages
+- Admin panel (superadmin only)
+- Dark mode support
+- CSV report export
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-- **Frontend:** React, TailwindCSS, Chart.js
-- **Backend:** Node.js, Express, MongoDB
-- **Monitor:** Python
-- **Deployment:** Vercel (Frontend), Railway (Backend)
+- **Frontend:** Next.js 16, React 19, TypeScript, TailwindCSS, Recharts, Lucide React
+- **Backend:** Node.js, Express 5, TypeScript, Prisma 7, PostgreSQL
+- **Deployment:** Vercel (frontend), Render (backend)
 
-## 🚀 Deployment
+## Project Structure
 
-- Frontend: Vercel
-- Backend: Railway
-- Database: MongoDB Atlas
-- Monitor: Python (local or cloud)
+```
+KingX-Project/
+├── backend-ts/          # TypeScript/Express backend with Prisma
+│   ├── prisma/          # Schema & migrations
+│   ├── src/
+│   │   ├── config/      # Database config
+│   │   ├── controllers/ # Route handlers
+│   │   ├── middleware/   # Auth middleware
+│   │   ├── routes/      # API routes
+│   │   ├── services/    # Scheduler, monitor, SMS
+│   │   ├── utils/       # JWT helpers
+│   │   └── server.ts    # Entry point
+│   └── package.json
+├── frontend-next/       # Next.js 16 frontend
+│   ├── app/             # Next.js pages
+│   ├── components/      # React components
+│   └── package.json
+├── docs/                # Documentation & activity logs
+├── CLAUDE.md            # AI coding guidelines
+└── README.md
+```
 
-## 📁 Project Structure
-KingX-Capstone/
-├── backend/
-│ ├── src/
-│ │ ├── config/
-│ │ ├── models/
-│ │ ├── middleware/
-│ │ ├── routes/
-│ │ └── server.js
-│ └── package.json
-├── frontend/
-│ ├── src/
-│ │ ├── api/
-│ │ ├── components/
-│ │ ├── context/
-│ │ └── App.js
-│ └── package.json
-└── monitor/
-├── monitor.py
-└── .env
+## Setup
 
+1. Clone the repo
+2. Copy `.env.example` to `.env` in both `backend-ts/` and `frontend-next/`
+3. Fill in environment variables
+4. Run `npm install` in both directories
+5. Start backend: `npm run dev` in `backend-ts/`
+6. Start frontend: `npm run dev` in `frontend-next/`
 
-## 📧 Email Alerts
+## Alerts
 
-The system sends email alerts when a website goes DOWN. Configure `EMAIL_SENDER`, `EMAIL_PASSWORD`, and `EMAIL_RECIPIENT` in `monitor/monitor.py`.
+- Email: SMTP configuration
+- SMS: Email-to-SMS gateway (8 carriers supported)
+- Slack: Webhook URL
+- Discord: Webhook URL
 
-## 🎯 Future Improvements
-
-- SMS Alerts (Twilio)
-- Slack/Discord Integration
-- Multi-Region Monitoring
-- Mobile App (React Native)
-- Export Reports (CSV/PDF)
-
-## 📝 License
+## License
 
 MIT
 
