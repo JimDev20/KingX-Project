@@ -1,8 +1,9 @@
 'use client'
 
 import { Activity, BarChart3, Bell, ChevronRight, Globe2, Layers, Menu, Moon, Shield, Sun, Users, X, Zap } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTheme } from './ThemeProvider'
+import Skeleton from './Skeleton'
 
 interface Props {
   onOpenAuth: () => void
@@ -70,7 +71,54 @@ const pricing = [
 
 export default function LandingPage({ onOpenAuth }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [loaded, setLoaded] = useState(false)
   const { theme, toggleTheme } = useTheme()
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoaded(true), 400)
+    return () => clearTimeout(t)
+  }, [])
+
+  if (!loaded) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-slate-950">
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-3">
+            <div className="flex items-center gap-2.5">
+              <Skeleton className="h-9 w-9 rounded-lg" />
+              <Skeleton className="h-5 w-24" />
+            </div>
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-5 w-5 rounded" />
+              <Skeleton className="h-9 w-20 rounded-lg" />
+              <Skeleton className="h-9 w-20 rounded-lg" />
+            </div>
+          </div>
+        </div>
+        <main className="mx-auto max-w-7xl px-4 pt-24 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center text-center">
+            <Skeleton className="mb-6 h-12 w-3/4 max-w-lg" />
+            <Skeleton className="mb-2 h-6 w-5/6 max-w-xl" />
+            <Skeleton className="mb-8 h-6 w-4/6 max-w-md" />
+            <div className="flex gap-4">
+              <Skeleton className="h-12 w-36 rounded-xl" />
+              <Skeleton className="h-12 w-36 rounded-xl" />
+            </div>
+          </div>
+          <div className="mt-20 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} className="rounded-2xl border border-slate-200 p-6 dark:border-slate-800">
+                <Skeleton className="mb-4 h-10 w-10 rounded-lg" />
+                <Skeleton className="mb-2 h-5 w-32" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="mt-1 h-4 w-3/4" />
+              </div>
+            ))}
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-white">
