@@ -81,6 +81,9 @@ function DashboardInner() {
   const [showForgotPw, setShowForgotPw] = useState(false)
   const [currentPage, setCurrentPage] = useState<Page>('home')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [autoRefresh, setAutoRefresh] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [pageKey, setPageKey] = useState(0)
 
   const authHeaders = useMemo(() => ({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }), [token])
 
@@ -101,6 +104,20 @@ function DashboardInner() {
   useEffect(() => {
     if (token) { const id = window.setTimeout(() => void loadDashboard(token), 0); return () => window.clearTimeout(id) }
   }, [loadDashboard, token])
+
+  useEffect(() => {
+    if (!token || !autoRefresh || currentPage !== 'home') return
+    const id = setInterval(async () => {
+      setRefreshing(true)
+      await loadDashboard()
+      setRefreshing(false)
+    }, 30000)
+    return () => clearInterval(id)
+  }, [token, autoRefresh, currentPage, loadDashboard])
+
+  useEffect(() => {
+    setPageKey(k => k + 1)
+  }, [currentPage])
 
   const handleAuth = async (e: React.FormEvent): Promise<boolean> => {
     e.preventDefault(); setLoading(true); setMessage('')
@@ -145,7 +162,7 @@ function DashboardInner() {
 
   const handleSiteFormChange = (field: string, value: string) => setSiteForm(prev => ({ ...prev, [field]: value }))
 
-  const nav = (id: Page) => { setCurrentPage(id); setSidebarOpen(false) }
+  const nav = (id: Page) => { setCurrentPage(id); setSidebarOpen(false); setPageKey(k => k + 1) }
 
   if (!user) {
     return (
@@ -212,7 +229,24 @@ function DashboardInner() {
               <StatCard icon={<Tooltip text="Websites currently experiencing downtime"><AlertTriangle className="h-5 w-5" /></Tooltip>} label="Down" value={stats.downSites} tone="red" />
               <StatCard icon={<Tooltip text="Average response time across all monitored sites"><Clock3 className="h-5 w-5" /></Tooltip>} label="Avg Response" value={`${stats.averageResponseTime}ms`} tone="amber" />
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+
+            {stats.totalSites > 0 && (
+              <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-sm dark:border-slate-700/80 dark:bg-slate-900/80">
+                <div className="flex h-2 overflow-hidden">
+                  <div style={{ flex: stats.upSites }} className="bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all" />
+                  <div style={{ flex: stats.downSites }} className="bg-gradient-to-r from-red-400 to-red-500 transition-all" />
+                  <div style={{ flex: stats.pendingSites }} className="bg-gradient-to-r from-amber-400 to-amber-500 transition-all" />
+                </div>
+                <div className="flex items-center gap-6 px-5 py-3 text-xs font-medium text-slate-500 dark:text-slate-400">
+                  <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" /> {stats.upSites} up</span>
+                  {stats.downSites > 0 && <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-red-500" /> {stats.downSites} down</span>}
+                  {stats.pendingSites > 0 && <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-500" /> {stats.pendingSites} pending</span>}
+                  {refreshing && <span className="ml-auto text-indigo-500 flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> refreshing</span>}
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-sm p-5 dark:border-slate-700/80 dark:bg-slate-900/80">
               <h2 className="mb-3 font-semibold text-slate-900 dark:text-white">Quick Add</h2>
               <WebsiteForm siteForm={siteForm} loading={loading} onSubmit={handleCreateWebsite} onChange={handleSiteFormChange} />
             </div>
@@ -323,10 +357,10 @@ function DashboardInner() {
   ]
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] dark:bg-slate-950">
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-950 dark:via-slate-950 dark:to-indigo-950/20">
       <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-white border-r border-slate-200 transition-transform dark:border-slate-800 dark:bg-slate-900 lg:static lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="flex h-16 items-center gap-3 border-b border-slate-200 px-5 dark:border-slate-800">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg">
+        <div className="flex h-16 items-center gap-3 border-b border-slate-200/80 px-5 dark:border-slate-800/80">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg ring-2 ring-indigo-200 dark:ring-indigo-800">
             <Activity className="h-5 w-5" />
           </div>
           <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">KingX</span>
@@ -335,7 +369,7 @@ function DashboardInner() {
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
           {navSections.map((section, si) => (
             <div key={si} className="mb-3">
-              <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">{section.label}</p>
+              <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">{section.label}</p>
               {section.items.map(item => {
                 const Icon = item.icon
                 const isActive = currentPage === item.id
@@ -356,9 +390,9 @@ function DashboardInner() {
           ))}
         </nav>
 
-        <div className="border-t border-slate-200 p-3 dark:border-slate-800">
-          <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
-            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-xs font-bold text-white">{user.fullName?.charAt(0)?.toUpperCase() || 'U'}</div>
+        <div className="border-t border-slate-200/80 p-3 dark:border-slate-800/80">
+          <div className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-slate-50 to-indigo-50/50 p-3 dark:from-slate-800/50 dark:to-indigo-900/20">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-xs font-bold text-white shadow-md">{user.fullName?.charAt(0)?.toUpperCase() || 'U'}</div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{user.fullName || user.email}</p>
               <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
@@ -375,7 +409,9 @@ function DashboardInner() {
       {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/30 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/80 px-4 backdrop-blur-lg dark:border-slate-800 dark:bg-slate-900/80">
+        <div className="sticky top-0 z-20">
+          <div className="h-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+          <header className="flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/80 px-4 backdrop-blur-lg dark:border-slate-800/80 dark:bg-slate-900/80">
           <button onClick={() => setSidebarOpen(true)} className="grid h-9 w-9 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 lg:hidden dark:text-slate-400 dark:hover:bg-slate-800">
             <Menu className="h-5 w-5" />
           </button>
@@ -393,11 +429,20 @@ function DashboardInner() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <div className="hidden items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 md:flex dark:bg-slate-800 dark:text-slate-400">
-              <Tooltip text="Current overall system status">
-                <div className={`h-2 w-2 rounded-full ${stats.totalSites > 0 && stats.downSites === 0 ? 'bg-emerald-500' : stats.downSites > 0 ? 'bg-red-500' : 'bg-amber-500'}`} />
+            {currentPage === 'home' && (
+              <Tooltip text={autoRefresh ? 'Auto-refresh every 30s (click to disable)' : 'Auto-refresh is off (click to enable)'}>
+                <button onClick={() => setAutoRefresh(!autoRefresh)}
+                  className={`grid h-8 w-8 place-items-center rounded-lg transition-all ${autoRefresh ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+                  <Activity className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                </button>
               </Tooltip>
-              {stats.downSites === 0 ? 'All systems operational' : `${stats.downSites} site${stats.downSites > 1 ? 's' : ''} down`}
+            )}
+            <div className="hidden items-center gap-2.5 rounded-xl bg-slate-100/80 px-3.5 py-2 text-xs font-medium text-slate-600 md:flex dark:bg-slate-800/80 dark:text-slate-400">
+              <Tooltip text="Current overall system status">
+                <div className={`relative h-2 w-2 ${stats.downSites === 0 ? 'bg-emerald-500' : 'bg-red-500'} rounded-full ${stats.downSites === 0 ? 'animate-pulse' : ''}`} />
+              </Tooltip>
+              <span className="hidden sm:inline">{stats.downSites === 0 ? 'All systems operational' : `${stats.downSites} site${stats.downSites > 1 ? 's' : ''} down`}</span>
+              <span className="sm:hidden">{stats.downSites === 0 ? 'All good' : `${stats.downSites} down`}</span>
             </div>
             <Tooltip text="Sign out of your account">
               <button onClick={handleLogout} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
@@ -406,6 +451,7 @@ function DashboardInner() {
             </Tooltip>
           </div>
         </header>
+        </div>
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           {message && (
@@ -415,7 +461,9 @@ function DashboardInner() {
                 : 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400'
             }`}>{message}</div>
           )}
-          {renderPage()}
+          <div key={pageKey} className="animate-fadeIn">
+            {renderPage()}
+          </div>
         </main>
       </div>
 
