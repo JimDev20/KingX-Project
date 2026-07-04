@@ -285,6 +285,7 @@ function DashboardInner() {
                     {refreshing && <span className="ml-auto text-indigo-500 flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> refreshing</span>}
                   </div>
                 </div>
+
                 <div className="rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-sm p-5 dark:border-slate-700/80 dark:bg-slate-900/80">
                   <p className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-300">Response Time by Website</p>
                   {websites.filter(w => w.responseTime).length > 0 ? (
@@ -303,17 +304,56 @@ function DashboardInner() {
                     <p className="py-6 text-center text-sm text-slate-400">No response time data yet</p>
                   )}
                 </div>
+
+                <div className="rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-sm p-5 dark:border-slate-700/80 dark:bg-slate-900/80">
+                  <p className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-300">Monitor Status</p>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {websites.slice(0, 12).map(s => {
+                      const isUp = s.status === 'UP'
+                      const isDown = s.status === 'DOWN'
+                      return (
+                        <button key={s.id} onClick={() => { setCurrentPage('websites'); setSelectedWebsite({ id: s.id, name: s.name }) }}
+                          className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all hover:shadow-md ${
+                            isDown
+                              ? 'border-red-200 bg-red-50/50 hover:border-red-300 dark:border-red-800/50 dark:bg-red-900/10'
+                              : 'border-slate-200 bg-white hover:border-indigo-200 dark:border-slate-700 dark:bg-slate-800/50 dark:hover:border-indigo-700'
+                          }`}>
+                          <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${
+                            isUp ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                            isDown ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' :
+                            'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                          }`}>
+                            {isUp ? <CheckCircle2 className="h-5 w-5" /> :
+                             isDown ? <AlertTriangle className="h-5 w-5" /> :
+                             <Clock3 className="h-5 w-5" />}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{s.name}</p>
+                            <div className="mt-0.5 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                              <span className={`font-semibold ${isUp ? 'text-emerald-600 dark:text-emerald-400' : isDown ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'}`}>{s.status}</span>
+                              <span>{s.uptime.toFixed(1)}%</span>
+                              {s.responseTime && <span>{s.responseTime}ms</span>}
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {websites.length > 12 && (
+                    <p className="mt-3 text-center text-xs text-slate-400">+{websites.length - 12} more sites</p>
+                  )}
+                </div>
               </>
             )}
 
-            <div>
-              <WebsiteForm siteForm={siteForm} loading={loading} onSubmit={handleCreateWebsite} onChange={handleSiteFormChange} />
-            </div>
-            <WebsiteTable websites={websites} search={search} statusFilter={statusFilter} checkingId={checkingId}
-              loading={loading} message={message} onSearchChange={setSearch} onStatusFilterChange={setStatusFilter}
-              onRefresh={() => loadDashboard()} onCheck={handleCheckWebsite} onDelete={handleDeleteWebsite}
-              onViewHistory={id => { const s = websites.find(w => w.id === id); if (s) setSelectedWebsite({ id: s.id, name: s.name }) }}
-              onEdit={site => setEditingWebsite(site)} />
+            {!stats.totalSites && (
+              <div className="rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-sm p-8 text-center dark:border-slate-700/80 dark:bg-slate-900/80">
+                <Globe2 className="mx-auto mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+                <p className="font-semibold text-slate-700 dark:text-slate-300">No websites yet</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Go to Websites to add your first monitor</p>
+                <button onClick={() => setCurrentPage('websites')} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Add Website</button>
+              </div>
+            )}
           </section>
         )
       case 'websites':
