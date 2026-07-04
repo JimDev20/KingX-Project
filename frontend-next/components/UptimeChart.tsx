@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { X, Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { X, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import Skeleton, { SkeletonChart } from './Skeleton'
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
 } from 'recharts'
@@ -73,8 +74,8 @@ export default function UptimeChart({ websiteId, websiteName, onClose }: Props) 
         </div>
 
         {loading ? (
-          <div className="grid place-items-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+          <div className="p-6">
+            <SkeletonChart />
           </div>
         ) : (
           <div className="p-6">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { BarChart3, Download, FileText, Filter, Loader2, TrendingUp, Calendar } from 'lucide-react'
+import { SkeletonChart } from './Skeleton'
 import Tooltip from './Tooltip'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
@@ -78,7 +79,14 @@ export default function ReportsPage({ onClose, inline }: Props) {
 
         <div className="p-6">
           {loading ? (
-            <div className="grid place-items-center py-12"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div>
+            <div className="space-y-6">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="h-24 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700" />
+                <div className="h-24 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700" />
+                <div className="h-24 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700" />
+              </div>
+              <SkeletonChart />
+            </div>
           ) : (
             <>
               <div className="mb-6 grid grid-cols-3 gap-4">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Activity, Filter, History, Loader2, Search, User, Globe2, Users, Settings, Shield } from 'lucide-react'
+import { SkeletonRow } from './Skeleton'
 import Tooltip from './Tooltip'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
@@ -118,7 +119,7 @@ export default function AuditLogPage({ onClose, inline }: Props) {
         {msg && <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-400">{msg}</div>}
 
         {loading ? (
-          <div className="grid place-items-center py-12"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div>
+          <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}</div>
         ) : paged.length === 0 ? (
           <div className="py-12 text-center text-slate-500 dark:text-slate-400">
             <History className="mx-auto mb-2 h-8 w-8 text-slate-300 dark:text-slate-600" />

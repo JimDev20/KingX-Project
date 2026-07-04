@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { AlertTriangle, CheckCircle2, Clock, Loader2, MessageSquare, Send, X } from 'lucide-react'
+import { SkeletonRow } from './Skeleton'
 import Tooltip from './Tooltip'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
@@ -114,7 +115,7 @@ export default function IncidentsPage({ onClose, inline }: Props) {
           }}>{msg}<button className="ml-2 font-bold" onClick={() => setMsg('')}>x</button></div>}
 
           {loading ? (
-            <div className="grid place-items-center py-12"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div>
+            <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}</div>
           ) : items.length === 0 ? (
             <div className="py-12 text-center text-slate-500">
               <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-emerald-400" />

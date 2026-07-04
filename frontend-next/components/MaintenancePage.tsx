@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Plus, X, Loader2, Trash2, Wrench } from 'lucide-react'
+import { SkeletonCard } from './Skeleton'
 import Tooltip from './Tooltip'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
@@ -104,7 +105,7 @@ export default function MaintenancePage({ onClose, inline }: Props) {
           )}
 
           {loading ? (
-            <div className="grid place-items-center py-12"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div>
+            <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}</div>
           ) : items.length === 0 ? (
             <div className="py-12 text-center text-slate-500 dark:text-slate-400">
               <Wrench className="mx-auto mb-2 h-8 w-8 text-slate-300 dark:text-slate-600" />

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { LayoutDashboard, Plus, X, Loader2, Trash2, Edit3, CheckCircle2, AlertTriangle, Clock3, Globe2, BarChart3, Bell, Shield, ChevronRight } from 'lucide-react'
+import { SkeletonCard } from './Skeleton'
 import Tooltip from './Tooltip'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
@@ -184,7 +185,7 @@ export default function DashboardsPage({ onClose, inline }: Props) {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}</div>
       ) : dashboards.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white/80 p-12 text-center dark:border-slate-700 dark:bg-slate-900/80">
           <LayoutDashboard className="mx-auto mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />

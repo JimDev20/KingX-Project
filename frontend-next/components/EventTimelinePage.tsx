@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { History, Plus, X, Loader2, Trash2, Rocket, Settings, AlertTriangle, RefreshCw, Info } from 'lucide-react'
+import { History, Plus, X, Trash2, Rocket, Settings, AlertTriangle, RefreshCw, Info } from 'lucide-react'
 import Tooltip from './Tooltip'
+import Skeleton, { SkeletonRow } from './Skeleton'
 
 interface TimelineEvent { id: string; type: string; title: string; description: string; timestamp: string }
 
@@ -91,7 +92,9 @@ export default function EventTimelinePage({ onClose, inline }: Props) {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>
+        <div className="space-y-3">
+          <SkeletonRow /><SkeletonRow /><SkeletonRow /><SkeletonRow />
+        </div>
       ) : events.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white/80 p-12 text-center dark:border-slate-700 dark:bg-slate-900/80">
           <History className="mx-auto mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />

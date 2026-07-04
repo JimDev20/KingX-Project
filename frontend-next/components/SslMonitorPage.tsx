@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { AlertTriangle, CheckCircle2, Globe2, Loader2, RefreshCcw, Search, Shield, ShieldAlert } from 'lucide-react'
+import { SkeletonCard } from './Skeleton'
 import Tooltip from './Tooltip'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
@@ -107,7 +108,7 @@ export default function SslMonitorPage({ onClose, inline }: Props) {
         {msg && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400">{msg}</div>}
 
         {loading ? (
-          <div className="grid place-items-center py-12"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}</div>
         ) : filtered.length === 0 ? (
           <div className="py-12 text-center text-slate-500 dark:text-slate-400">
             <Shield className="mx-auto mb-2 h-8 w-8 text-slate-300 dark:text-slate-600" />

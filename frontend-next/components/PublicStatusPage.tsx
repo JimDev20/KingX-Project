@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Activity, CheckCircle2, Clock3, Globe2, Loader2, XCircle } from 'lucide-react'
+import { Activity, CheckCircle2, Clock3, Globe2, XCircle } from 'lucide-react'
+import Skeleton, { SkeletonCard } from './Skeleton'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
@@ -51,8 +52,17 @@ export default function PublicStatusPage({ slug }: Props) {
   const overall = sites.length === 0 ? 100 : Math.round((up / sites.length) * 100)
 
   if (loading) return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50">
-      <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
+      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+        <div className="mb-8 text-center">
+          <Skeleton className="mx-auto mb-4 h-14 w-14 rounded-2xl" />
+          <Skeleton className="mx-auto mb-2 h-7 w-48" />
+          <Skeleton className="mx-auto h-4 w-36" />
+        </div>
+        <div className="grid gap-4">
+          <SkeletonCard /><SkeletonCard /><SkeletonCard />
+        </div>
+      </div>
     </div>
   )
 

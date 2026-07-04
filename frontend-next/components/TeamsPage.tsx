@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Users, Plus, X, Loader2, UserPlus, Trash2, UserMinus, Shield, ShieldCheck, UserCog } from 'lucide-react'
+import { SkeletonRow } from './Skeleton'
 import Tooltip from './Tooltip'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
@@ -161,7 +162,31 @@ export default function TeamsPage({ onClose, inline }: Props) {
           )}
 
           {loading ? (
-            <div className="grid place-items-center py-12"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div>
+            <div className="space-y-4">{Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-slate-200 p-5 dark:border-slate-700">
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="space-y-2">
+                    <div className="h-5 w-36 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+                    <div className="h-3 w-20 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+                  </div>
+                  <div className="h-9 w-16 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700" />
+                </div>
+                <div className="space-y-2">
+                  {Array.from({ length: 2 }).map((_, j) => (
+                    <div key={j} className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3 dark:bg-slate-800/30">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700" />
+                        <div className="space-y-1.5">
+                          <div className="h-4 w-28 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+                          <div className="h-3 w-36 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+                        </div>
+                      </div>
+                      <div className="h-5 w-14 animate-pulse rounded-md bg-slate-200 dark:bg-slate-700" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}</div>
           ) : teams.length === 0 ? (
             <div className="py-12 text-center text-slate-500">
               <Users className="mx-auto mb-2 h-8 w-8 text-slate-300" />

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Bell, BellOff, Plus, X, Loader2, Trash2, Mail } from 'lucide-react'
+import { SkeletonRow } from './Skeleton'
 import Tooltip from './Tooltip'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
@@ -145,7 +146,7 @@ export default function AlertsPage({ onClose, inline }: Props) {
         )}
 
         {loading ? (
-          <div className="grid place-items-center py-12"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div>
+          <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)}</div>
         ) : tab === 'rules' ? (
           <div className="space-y-4">
             <Tooltip text="Create a new alert rule to get notified when a website goes down">

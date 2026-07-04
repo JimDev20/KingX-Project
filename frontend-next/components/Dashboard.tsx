@@ -18,6 +18,7 @@ import AdminPage from './AdminPage'
 import LandingPage from './LandingPage'
 import Tooltip from './Tooltip'
 import ThemeProvider, { useTheme } from './ThemeProvider'
+import Skeleton, { SkeletonCard, SkeletonChart, SkeletonRow } from './Skeleton'
 import MaintenancePage from './MaintenancePage'
 import IncidentsPage from './IncidentsPage'
 import ForgotPasswordModal from './ForgotPasswordModal'
@@ -253,6 +254,26 @@ function DashboardInner() {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
+        if (loading && websites.length === 0) {
+          return (
+            <section className="space-y-6">
+              <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-5 dark:border-slate-700/80 dark:bg-slate-900/80">
+                <Skeleton className="mb-2 h-5 w-48" />
+                <Skeleton className="h-4 w-64" />
+              </div>
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
+              </div>
+              <SkeletonChart />
+              <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-5 dark:border-slate-700/80 dark:bg-slate-900/80">
+                <Skeleton className="mb-4 h-4 w-28" />
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {[1,2,3,4,5,6].map(i => <SkeletonRow key={i} />)}
+                </div>
+              </div>
+            </section>
+          )
+        }
         return (
           <section className="space-y-6">
             <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-r from-indigo-500/5 via-purple-500/5 to-pink-500/5 p-5 dark:border-slate-700/80 dark:from-indigo-500/10 dark:via-purple-500/10 dark:to-pink-500/10">

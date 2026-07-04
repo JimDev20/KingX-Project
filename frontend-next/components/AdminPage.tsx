@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Activity, Globe2, Shield, Users, X, Loader2, Search } from 'lucide-react'
+import Skeleton, { SkeletonRow } from './Skeleton'
 import Tooltip from './Tooltip'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
@@ -96,7 +97,25 @@ export default function AdminPage({ onClose, inline }: Props) {
           )}
 
           {loading ? (
-            <div className="grid place-items-center py-12"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div>
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+                    <Skeleton className="mb-2 h-3 w-12" />
+                    <Skeleton className="h-8 w-16" />
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-5 w-36" />
+                  <Skeleton className="h-9 w-56 rounded-lg" />
+                </div>
+                <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => (
+                  <SkeletonRow key={i} />
+                ))}</div>
+              </div>
+            </div>
           ) : (
             <>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

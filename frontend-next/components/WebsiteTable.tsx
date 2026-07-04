@@ -3,6 +3,7 @@ import {
   RefreshCcw, Trash2, Globe2, Loader2, Search, Edit3,
 } from 'lucide-react'
 import Tooltip from './Tooltip'
+import Skeleton, { SkeletonRow } from './Skeleton'
 
 interface Website {
   id: string
@@ -204,7 +205,11 @@ export default function WebsiteTable({
         </table>
       </div>
 
-      {filtered.length === 0 && (
+      {loading && websites.length === 0 ? (
+        <div className="space-y-2 px-5 py-6">
+          {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
+        </div>
+      ) : filtered.length === 0 && (
         <div className="grid place-items-center px-5 py-16 text-center">
           <Globe2 className="mb-3 h-10 w-10 text-slate-300" />
           <p className="font-semibold text-slate-900">No websites found</p>

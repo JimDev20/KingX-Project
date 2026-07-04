@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Bell, CheckCircle2, Filter, Loader2, Mail, MessageSquare, Search, XCircle } from 'lucide-react'
+import Skeleton from './Skeleton'
 import Tooltip from './Tooltip'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
@@ -96,7 +97,36 @@ export default function NotificationsPage({ onClose, inline }: Props) {
         {msg && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400">{msg}</div>}
 
         {loading ? (
-          <div className="grid place-items-center py-12"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-8 w-8 rounded-lg" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-8 w-8 rounded-lg" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-3 w-28" />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-8 w-8 rounded-lg" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-4 w-44" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-8 w-8 rounded-lg" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-28" />
+              </div>
+            </div>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="py-12 text-center text-slate-500 dark:text-slate-400">
             <Bell className="mx-auto mb-2 h-8 w-8 text-slate-300 dark:text-slate-600" />
