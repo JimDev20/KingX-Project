@@ -23,6 +23,8 @@ interface Alert {
   status: string
   message: string
   createdAt: string
+  onCallUserId?: string | null
+  onCallUser?: { id: string; fullName: string; email: string } | null
   website: { name: string; url: string }
 }
 
@@ -268,6 +270,11 @@ export default function AlertsPage({ onClose, inline }: Props) {
                         }`}>
                           {alert.status}
                         </span>
+                        {alert.onCallUser && (
+                          <span className="rounded-md bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+                            On-Call: {alert.onCallUser.fullName || alert.onCallUser.email}
+                          </span>
+                        )}
                       </div>
                       <p className="mt-1 text-sm text-slate-700">{alert.message}</p>
                       <p className="mt-0.5 text-xs text-slate-500">{alert.website.name} &middot; {new Date(alert.createdAt).toLocaleString()}</p>

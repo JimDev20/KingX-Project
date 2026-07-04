@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  Activity, AlertCircle, AlertTriangle, BarChart3, Bell, CheckCircle2, Clock3, FileText,
-  Globe2, History, Home, Loader2, LogOut, Menu, Moon, Shield, Settings, Sun, Users, Webhook, Wrench, X,
+  Activity, AlertCircle, AlertTriangle, BarChart3, Bell, CheckCircle2, Clock3, Code2, FileText,
+  Globe2, History, Home, Loader2, LogOut, Menu, Moon, Phone, Shield, Settings, Sun, Users, Webhook, Wrench, X,
 } from 'lucide-react'
 import StatCard from './StatCard'
 import WebsiteForm from './WebsiteForm'
@@ -25,6 +25,8 @@ import SslMonitorPage from './SslMonitorPage'
 import ReportsPage from './ReportsPage'
 import AuditLogPage from './AuditLogPage'
 import WebhooksPage from './WebhooksPage'
+import StatusBadgePage from './StatusBadgePage'
+import OnCallPage from './OnCallPage'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
@@ -49,13 +51,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return payload as T
 }
 
-type Page = 'home' | 'websites' | 'analytics' | 'alerts' | 'team' | 'maintenance' | 'incidents' | 'settings' | 'notifications' | 'ssl' | 'reports' | 'audit' | 'webhooks' | 'admin'
+type Page = 'home' | 'websites' | 'analytics' | 'alerts' | 'team' | 'maintenance' | 'incidents' | 'settings' | 'notifications' | 'ssl' | 'reports' | 'audit' | 'webhooks' | 'badge' | 'oncall' | 'admin'
 
 const pageLabels: Record<Page, string> = {
   home: 'Home', websites: 'Websites', analytics: 'Analytics', alerts: 'Alerts',
   team: 'Team', maintenance: 'Maintenance', incidents: 'Incidents', settings: 'Settings',
   notifications: 'Notifications', ssl: 'SSL Monitor', reports: 'Reports', audit: 'Audit Log',
-  webhooks: 'Webhooks', admin: 'Admin',
+  webhooks: 'Webhooks', badge: 'Status Badge', oncall: 'On-Call', admin: 'Admin',
 }
 
 function DashboardInner() {
@@ -383,6 +385,10 @@ function DashboardInner() {
         return <AuditLogPage inline />
       case 'webhooks':
         return <WebhooksPage inline />
+      case 'badge':
+        return <StatusBadgePage inline />
+      case 'oncall':
+        return <OnCallPage inline />
       case 'admin':
         return <AdminPage inline />
       default:
@@ -399,6 +405,7 @@ function DashboardInner() {
         { id: 'team', label: 'Team', icon: Users },
         { id: 'maintenance', label: 'Maintenance', icon: Wrench },
         { id: 'incidents', label: 'Incidents', icon: AlertCircle },
+        { id: 'oncall', label: 'On-Call', icon: Phone },
       ],
     },
     {
@@ -409,6 +416,7 @@ function DashboardInner() {
         { id: 'ssl', label: 'SSL Monitor', icon: Shield },
         { id: 'reports', label: 'Reports', icon: FileText },
         { id: 'audit', label: 'Audit Log', icon: History },
+        { id: 'badge', label: 'Status Badge', icon: Code2 },
       ],
     },
     {

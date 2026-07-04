@@ -19,8 +19,18 @@ export const listAlerts = async (req: AuthRequest, res: Response): Promise<void>
       prisma.alert.count({ where: { userId } }),
     ])
 
+    const onCallUserIds = [...new Set(items.filter(a => a.onCallUserId).map(a => a.onCallUserId!))]
+    const onCallUsers = onCallUserIds.length > 0
+      ? await prisma.user.findMany({ where: { id: { in: onCallUserIds } }, select: { id: true, fullName: true, email: true } })
+      : []
+
+    const enriched = items.map(a => ({
+      ...a,
+      onCallUser: a.onCallUserId ? onCallUsers.find(u => u.id === a.onCallUserId) || null : null,
+    }))
+
     res.json({
-      items,
+      items: enriched,
       pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
     })
   } catch (error) {
