@@ -114,8 +114,8 @@ export default function AlertsPage({ onClose, inline }: Props) {
   }
 
   const content = (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+    <div className="rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-sm shadow-sm dark:border-slate-700/80 dark:bg-slate-900/80">
+      <div className="flex items-center justify-between border-b border-slate-200/80 px-6 py-4 dark:border-slate-700/80">
         <div className="flex items-center gap-3">
           <Bell className="h-5 w-5 text-indigo-600" />
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">Alerts</h2>
@@ -281,10 +281,10 @@ export default function AlertsPage({ onClose, inline }: Props) {
       </div>
   )
 
-  if (inline) return content
+  if (inline) return <div className="animate-fadeIn">{content}</div>
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">{content}</div>
+      <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200/80 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">{content}</div>
     </div>
   )
 }
