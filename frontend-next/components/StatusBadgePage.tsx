@@ -126,27 +126,32 @@ export default function StatusBadgePage({ onClose, inline }: Props) {
               )}
             </div>
 
-            <div>
-              <p className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Embed as Image</p>
-              <div className="relative">
-                <pre className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-900 p-3 text-xs text-green-400 dark:border-slate-700">{imgTag}</pre>
-                <Tooltip text={copiedImg ? 'Copied!' : 'Copy to clipboard'}>
-                  <button onClick={() => copyToClipboard(imgTag, setCopiedImg)}
-                    className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-md text-slate-400 hover:bg-slate-700">{copiedImg ? <CheckCircle2 className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}</button>
-                </Tooltip>
-              </div>
-            </div>
-
-            <div>
-              <p className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Fetch as JSON</p>
-              <div className="relative">
-                <pre className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-900 p-3 text-xs text-green-400 dark:border-slate-700">{jsonSnippet}</pre>
-                <Tooltip text={copiedJson ? 'Copied!' : 'Copy to clipboard'}>
-                  <button onClick={() => copyToClipboard(jsonSnippet, setCopiedJson)}
-                    className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-md text-slate-400 hover:bg-slate-700">{copiedJson ? <CheckCircle2 className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}</button>
-                </Tooltip>
-              </div>
-            </div>
+            {selectedSlug ? (
+              <>
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Embed as Image</p>
+                  <div className="relative">
+                    <pre className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-900 p-3 text-xs text-green-400 dark:border-slate-700">{imgTag}</pre>
+                    <Tooltip text={copiedImg ? 'Copied!' : 'Copy to clipboard'}>
+                      <button onClick={() => copyToClipboard(imgTag, setCopiedImg)}
+                        className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-md text-slate-400 hover:bg-slate-700">{copiedImg ? <CheckCircle2 className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}</button>
+                    </Tooltip>
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Fetch as JSON</p>
+                  <div className="relative">
+                    <pre className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-900 p-3 text-xs text-green-400 dark:border-slate-700">{jsonSnippet}</pre>
+                    <Tooltip text={copiedJson ? 'Copied!' : 'Copy to clipboard'}>
+                      <button onClick={() => copyToClipboard(jsonSnippet, setCopiedJson)}
+                        className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-md text-slate-400 hover:bg-slate-700">{copiedJson ? <CheckCircle2 className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}</button>
+                    </Tooltip>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-4 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/50">Select a team to see embed code</div>
+            )}
           </>
         )}
       </div>
