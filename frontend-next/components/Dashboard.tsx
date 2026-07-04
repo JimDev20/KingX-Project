@@ -51,6 +51,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 type Page = 'home' | 'websites' | 'analytics' | 'alerts' | 'team' | 'maintenance' | 'incidents' | 'settings' | 'notifications' | 'ssl' | 'reports' | 'audit' | 'webhooks' | 'apidocs' | 'admin'
 
+const pageLabels: Record<Page, string> = {
+  home: 'Home', websites: 'Websites', analytics: 'Analytics', alerts: 'Alerts',
+  team: 'Team', maintenance: 'Maintenance', incidents: 'Incidents', settings: 'Settings',
+  notifications: 'Notifications', ssl: 'SSL Monitor', reports: 'Reports', audit: 'Audit Log',
+  webhooks: 'Webhooks', apidocs: 'API Docs', admin: 'Admin',
+}
+
 function DashboardInner() {
   const { theme, toggleTheme } = useTheme()
   const [token, setToken] = useState(() => typeof window === 'undefined' ? '' : localStorage.getItem('kingx_token') || '')
@@ -386,7 +393,7 @@ function DashboardInner() {
 
           <div className="hidden items-center gap-2 text-sm text-slate-500 lg:flex dark:text-slate-400">
             <Home className="h-4 w-4" />
-            <span className="font-medium capitalize text-slate-700 dark:text-slate-300">{currentPage}</span>
+            <span className="font-medium text-slate-700 dark:text-slate-300">{pageLabels[currentPage]}</span>
           </div>
 
           <div className="ml-auto flex items-center gap-2">

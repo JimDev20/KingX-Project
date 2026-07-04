@@ -1,6 +1,6 @@
 'use client'
 
-import { BookOpen, Code2, Copy, Globe2, Key, Link2, Server, Shield, XCircle } from 'lucide-react'
+import { BookOpen, Code2, Copy, Key, Link2, Shield, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import Tooltip from './Tooltip'
 
