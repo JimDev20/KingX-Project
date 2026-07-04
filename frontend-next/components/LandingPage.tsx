@@ -1,7 +1,8 @@
 'use client'
 
-import { Activity, BarChart3, Bell, ChevronRight, Globe2, Layers,Menu, Shield, Users, X, Zap } from 'lucide-react'
+import { Activity, BarChart3, Bell, ChevronRight, Globe2, Layers, Menu, Moon, Shield, Sun, Users, X, Zap } from 'lucide-react'
 import { useState } from 'react'
+import { useTheme } from './ThemeProvider'
 
 interface Props {
   onOpenAuth: () => void
@@ -69,6 +70,7 @@ const pricing = [
 
 export default function LandingPage({ onOpenAuth }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const { theme, toggleTheme } = useTheme()
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -87,7 +89,10 @@ export default function LandingPage({ onOpenAuth }: Props) {
             <a href="#about" className="text-sm font-medium text-slate-600 transition hover:text-slate-900">About</a>
           </nav>
 
-          <div className="hidden items-center gap-3 md:flex">
+          <div className="hidden items-center gap-2 md:flex">
+            <button onClick={toggleTheme} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 hover:bg-slate-100">
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
             <button onClick={onOpenAuth} className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
               Sign in
             </button>
@@ -108,6 +113,9 @@ export default function LandingPage({ onOpenAuth }: Props) {
               <a href="#pricing" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Pricing</a>
               <a href="#about" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">About</a>
               <hr className="my-1 border-slate-200" />
+              <button onClick={() => { toggleTheme(); setMenuOpen(false) }} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />} {theme === 'dark' ? 'Light' : 'Dark'} Mode
+              </button>
               <button onClick={() => { setMenuOpen(false); onOpenAuth() }} className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Sign in</button>
               <button onClick={() => { setMenuOpen(false); onOpenAuth() }} className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-2 text-sm font-semibold text-white">Get Started</button>
             </nav>

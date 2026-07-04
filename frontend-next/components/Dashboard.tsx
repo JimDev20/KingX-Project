@@ -5,7 +5,7 @@ import {
   Activity, AlertCircle, AlertTriangle, BarChart3, Bell, CheckCircle2, Clock3, Code2, FileText,
   Globe2, History, Home, LayoutDashboard, Loader2, LogOut, Menu, Moon, Shield, Settings, Sun, Users, Webhook, Wrench, X,
 } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts'
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts'
 import StatCard from './StatCard'
 import WebsiteForm from './WebsiteForm'
 import WebsiteTable from './WebsiteTable'
@@ -271,19 +271,39 @@ function DashboardInner() {
             </div>
 
             {stats.totalSites > 0 && (
-              <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-sm dark:border-slate-700/80 dark:bg-slate-900/80">
-                <div className="flex h-2 overflow-hidden">
-                  <div style={{ flex: stats.upSites }} className="bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all" />
-                  <div style={{ flex: stats.downSites }} className="bg-gradient-to-r from-red-400 to-red-500 transition-all" />
-                  <div style={{ flex: stats.pendingSites }} className="bg-gradient-to-r from-amber-400 to-amber-500 transition-all" />
+              <>
+                <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-sm dark:border-slate-700/80 dark:bg-slate-900/80">
+                  <div className="flex h-2 overflow-hidden">
+                    <div style={{ flex: stats.upSites }} className="bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all" />
+                    <div style={{ flex: stats.downSites }} className="bg-gradient-to-r from-red-400 to-red-500 transition-all" />
+                    <div style={{ flex: stats.pendingSites }} className="bg-gradient-to-r from-amber-400 to-amber-500 transition-all" />
+                  </div>
+                  <div className="flex items-center gap-6 px-5 py-3 text-xs font-medium text-slate-500 dark:text-slate-400">
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" /> {stats.upSites} up</span>
+                    {stats.downSites > 0 && <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-red-500" /> {stats.downSites} down</span>}
+                    {stats.pendingSites > 0 && <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-500" /> {stats.pendingSites} pending</span>}
+                    {refreshing && <span className="ml-auto text-indigo-500 flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> refreshing</span>}
+                  </div>
                 </div>
-                <div className="flex items-center gap-6 px-5 py-3 text-xs font-medium text-slate-500 dark:text-slate-400">
-                  <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" /> {stats.upSites} up</span>
-                  {stats.downSites > 0 && <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-red-500" /> {stats.downSites} down</span>}
-                  {stats.pendingSites > 0 && <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-500" /> {stats.pendingSites} pending</span>}
-                  {refreshing && <span className="ml-auto text-indigo-500 flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> refreshing</span>}
+                <div className="rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-sm p-5 dark:border-slate-700/80 dark:bg-slate-900/80">
+                  <p className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-300">Response Time by Website</p>
+                  {websites.filter(w => w.responseTime).length > 0 ? (
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={websites.filter(w => w.responseTime).slice(0, 15).map(w => ({ name: w.name.length > 12 ? w.name.slice(0, 12) + '..' : w.name, ms: w.responseTime }))} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                          <YAxis tick={{ fontSize: 11 }} stroke="#94a3b8" unit="ms" />
+                          <RechartsTooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                          <Bar dataKey="ms" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <p className="py-6 text-center text-sm text-slate-400">No response time data yet</p>
+                  )}
                 </div>
-              </div>
+              </>
             )}
 
             <div>
