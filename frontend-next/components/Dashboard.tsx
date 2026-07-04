@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Activity, AlertCircle, AlertTriangle, BarChart3, Bell, CheckCircle2, Clock3, Code2, FileText,
-  Globe2, History, Home, Loader2, LogOut, Menu, Moon, Phone, Shield, Settings, Sun, Users, Webhook, Wrench, X,
+  Globe2, History, Home, Loader2, LogOut, Menu, Moon, Shield, Settings, Sun, Users, Webhook, Wrench, X,
 } from 'lucide-react'
 import StatCard from './StatCard'
 import WebsiteForm from './WebsiteForm'
@@ -26,7 +26,6 @@ import ReportsPage from './ReportsPage'
 import AuditLogPage from './AuditLogPage'
 import WebhooksPage from './WebhooksPage'
 import StatusBadgePage from './StatusBadgePage'
-import OnCallPage from './OnCallPage'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
@@ -51,13 +50,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return payload as T
 }
 
-type Page = 'home' | 'websites' | 'analytics' | 'alerts' | 'team' | 'maintenance' | 'incidents' | 'settings' | 'notifications' | 'ssl' | 'reports' | 'audit' | 'webhooks' | 'badge' | 'oncall' | 'admin'
+type Page = 'home' | 'websites' | 'analytics' | 'alerts' | 'team' | 'maintenance' | 'incidents' | 'settings' | 'notifications' | 'ssl' | 'reports' | 'audit' | 'webhooks' | 'badge' | 'admin'
 
 const pageLabels: Record<Page, string> = {
   home: 'Home', websites: 'Websites', analytics: 'Analytics', alerts: 'Alerts',
   team: 'Team', maintenance: 'Maintenance', incidents: 'Incidents', settings: 'Settings',
   notifications: 'Notifications', ssl: 'SSL Monitor', reports: 'Reports', audit: 'Audit Log',
-  webhooks: 'Webhooks', badge: 'Status Badge', oncall: 'On-Call', admin: 'Admin',
+  webhooks: 'Webhooks', badge: 'Status Badge', admin: 'Admin',
 }
 
 function DashboardInner() {
@@ -387,8 +386,6 @@ function DashboardInner() {
         return <WebhooksPage inline />
       case 'badge':
         return <StatusBadgePage inline />
-      case 'oncall':
-        return <OnCallPage inline />
       case 'admin':
         return <AdminPage inline />
       default:
@@ -396,38 +393,22 @@ function DashboardInner() {
     }
   }
 
-  const navSections: { label: string; items: { id: Page; label: string; icon: React.ElementType; badge?: string; badgeColor?: string }[] }[] = [
-    {
-      label: 'Monitor',
-      items: [
-        { id: 'home', label: 'Home', icon: Home },
-        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-        { id: 'team', label: 'Team', icon: Users },
-        { id: 'maintenance', label: 'Maintenance', icon: Wrench },
-        { id: 'incidents', label: 'Incidents', icon: AlertCircle },
-        { id: 'oncall', label: 'On-Call', icon: Phone },
-      ],
-    },
-    {
-      label: 'Management',
-      items: [
-        { id: 'settings', label: 'Settings', icon: Settings },
-        { id: 'notifications', label: 'Notifications', icon: Activity },
-        { id: 'ssl', label: 'SSL Monitor', icon: Shield },
-        { id: 'reports', label: 'Reports', icon: FileText },
-        { id: 'audit', label: 'Audit Log', icon: History },
-        { id: 'badge', label: 'Status Badge', icon: Code2 },
-      ],
-    },
-    {
-      label: 'Integrations',
-      items: [
-        { id: 'webhooks', label: 'Webhooks', icon: Webhook },
-        { id: 'websites', label: 'Websites', icon: Globe2 },
-        { id: 'alerts', label: 'Alerts', icon: Bell },
-        ...(user.role === 'SUPERADMIN' ? [{ id: 'admin' as Page, label: 'Admin', icon: Shield, badge: 'Super', badgeColor: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' }] : []),
-      ],
-    },
+  const navItems: { id: Page; label: string; icon: React.ElementType; badge?: string; badgeColor?: string }[] = [
+    { id: 'home', label: 'Home', icon: Home },
+    { id: 'websites', label: 'Websites', icon: Globe2 },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'alerts', label: 'Alerts', icon: Bell },
+    { id: 'incidents', label: 'Incidents', icon: AlertCircle },
+    { id: 'maintenance', label: 'Maintenance', icon: Wrench },
+    { id: 'team', label: 'Team', icon: Users },
+    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'notifications', label: 'Notifications', icon: Activity },
+    { id: 'ssl', label: 'SSL Monitor', icon: Shield },
+    { id: 'reports', label: 'Reports', icon: FileText },
+    { id: 'audit', label: 'Audit Log', icon: History },
+    { id: 'webhooks', label: 'Webhooks', icon: Webhook },
+    { id: 'badge', label: 'Status Badge', icon: Code2 },
+    ...(user.role === 'SUPERADMIN' ? [{ id: 'admin' as Page, label: 'Admin', icon: Shield, badge: 'Super', badgeColor: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' }] : []),
   ]
 
   return (
@@ -441,27 +422,22 @@ function DashboardInner() {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          {navSections.map((section, si) => (
-            <div key={si} className="mb-3">
-              <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">{section.label}</p>
-              {section.items.map(item => {
-                const Icon = item.icon
-                const isActive = currentPage === item.id
-                return (
-                  <Tooltip key={item.id} text={`Navigate to ${item.label}`}>
-                    <button onClick={() => nav(item.id)}
-                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all ${
-                        isActive ? 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 dark:from-indigo-900/30 dark:to-purple-900/30 dark:text-indigo-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
-                      }`}>
-                      <Icon className="h-5 w-5 shrink-0" />
-                      <span className="truncate">{item.label}</span>
-                      {item.badge && <span className={`ml-auto rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${item.badgeColor || 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>{item.badge}</span>}
-                    </button>
-                  </Tooltip>
-                )
-              })}
-            </div>
-          ))}
+          {navItems.map(item => {
+            const Icon = item.icon
+            const isActive = currentPage === item.id
+            return (
+              <Tooltip key={item.id} text={`Navigate to ${item.label}`}>
+                <button onClick={() => nav(item.id)}
+                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all ${
+                    isActive ? 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 dark:from-indigo-900/30 dark:to-purple-900/30 dark:text-indigo-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                  }`}>
+                  <Icon className="h-5 w-5 shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                  {item.badge && <span className={`ml-auto rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${item.badgeColor || 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>{item.badge}</span>}
+                </button>
+              </Tooltip>
+            )
+          })}
         </nav>
 
         <div className="border-t border-slate-200/80 p-3 dark:border-slate-800/80">

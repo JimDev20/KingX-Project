@@ -99,7 +99,6 @@ model Team {
   members   TeamMember[]
   websites  Website[]
   maintenance MaintenanceWindow[]
-  onCallSchedules OnCallSchedule[]
 
   @@map("teams")
 }
@@ -273,48 +272,4 @@ model MaintenanceWindow {
   @@map("maintenance_windows")
 }
 
-enum OnCallScheduleType {
-  WEEKLY
-  DAILY
-  CUSTOM
-}
 
-enum OnCallDayOfWeek {
-  MON
-  TUE
-  WED
-  THU
-  FRI
-  SAT
-  SUN
-}
-
-model OnCallSchedule {
-  id        String             @id @default(cuid())
-  teamId    String
-  name      String
-  type      OnCallScheduleType @default(WEEKLY)
-  timezone  String             @default("UTC")
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
-  team      Team               @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  rotations OnCallRotation[]
-
-  @@index([teamId])
-  @@map("on_call_schedules")
-}
-
-model OnCallRotation {
-  id         String             @id @default(cuid())
-  scheduleId String
-  userId     String
-  startTime  String             @default("00:00")
-  endTime    String             @default("23:59")
-  dayOfWeek  OnCallDayOfWeek?
-  priority   Int                @default(0)
-  createdAt  DateTime           @default(now())
-  schedule   OnCallSchedule     @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
-
-  @@index([scheduleId])
-  @@map("on_call_rotations")
-}

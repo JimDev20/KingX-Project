@@ -11,7 +11,6 @@ import maintenanceRoutes from './routes/maintenanceRoutes'
 import incidentRoutes from './routes/incidentRoutes'
 import settingsRoutes from './routes/settingsRoutes'
 import publicRoutes from './routes/publicRoutes'
-import oncallRoutes from './routes/oncallRoutes'
 import { startMonitoring } from './services/scheduler'
 
 const app = express()
@@ -41,7 +40,6 @@ app.use('/api/maintenance', maintenanceRoutes)
 app.use('/api/incidents', incidentRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/public', publicRoutes)
-app.use('/api/oncall', oncallRoutes)
 
 app.get('/api/health', async (req, res) => {
   try {
