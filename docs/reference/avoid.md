@@ -1,0 +1,22 @@
+# Avoid
+
+- [ ] Purple-to-blue gradient
+- [ ] Gradient hero text
+- [ ] Emojis in your headings
+- [ ] Inter font everywhere
+- [ ] Colored left-border cards
+- [ ] Glassmorphism cards
+- [ ] Low-contrast dark mode
+- [ ] Three icon boxes in a row
+- [ ] A badge above the headline
+- [ ] Lucide icons everywhere
+- [ ] Untouched shadcn components
+- [ ] Sections fading in as you scroll
+- [ ] A beam that follows your cursor
+- [ ] Hover effects that make buttons fade
+- [ ] Inconsistent spacing
+- [ ] Em dashes everywhere
+- [ ] Generic buzzword copy
+- [ ] Serif italics for accent words
+- [ ] Space Grotesk plus Instrument Serif
+- [ ] Grain texture over a gradient
