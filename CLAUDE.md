@@ -17,6 +17,10 @@ Guidance for Claude Code working with code in this repo.
 - Don't auto-commit activity logs and docs.
 - Comments: one-liner, one sentence.
 
+## Reference
+
+- Read `docs/reference/` before changes; it covers design taste, HCI/UI UX, architecture, and security.
+
 ## Code Quality
 
 - Right data structures and algorithms for problem.
