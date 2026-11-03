@@ -9,4 +9,5 @@ dist/
 build/
 .DS_Store
 .next/
+docs/
 backend-ts/prisma/migrate-from-mongo.ts

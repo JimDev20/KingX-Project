@@ -1,9 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity, AlertCircle, AlertTriangle, BarChart3, Bell, CheckCircle2, Clock3, Code2, FileText,
-  Globe2, History, Home, LayoutDashboard, Loader2, LogOut, Menu, Moon, Shield, Settings, Sun, Users, Webhook, Wrench, X,
+  Globe2, History, Home, LayoutDashboard, Loader2, LogOut, Menu, Moon, Shield, Settings, Sun, Users, Webhook, Wrench,
 } from 'lucide-react'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts'
 import StatCard from './StatCard'
@@ -91,6 +91,7 @@ function DashboardInner() {
   const [refreshing, setRefreshing] = useState(false)
   const [analyticsHistory, setAnalyticsHistory] = useState<{ time: string; ms: number }[]>([])
   const [pageKey, setPageKey] = useState(0)
+  const authDialogRef = useRef<HTMLDivElement>(null)
 
   const authHeaders = useMemo(() => ({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }), [token])
 
@@ -125,6 +126,40 @@ function DashboardInner() {
   useEffect(() => {
     setPageKey(k => k + 1)
   }, [currentPage])
+
+  useEffect(() => {
+    if (!showAuthModal) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !showForgotPw) {
+        setShowAuthModal(false)
+        setMessage('')
+        return
+      }
+      if (event.key !== 'Tab' || showForgotPw) return
+      const dialog = authDialogRef.current
+      if (!dialog) return
+      const focusables = Array.from(dialog.querySelectorAll<HTMLElement>('button, input, [href]')).filter(el => !el.hasAttribute('disabled'))
+      if (focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      if (!dialog.contains(document.activeElement)) {
+        event.preventDefault()
+        first.focus()
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [showAuthModal, showForgotPw])
 
   useEffect(() => {
     if (currentPage !== 'analytics' || websites.length === 0) return
@@ -200,47 +235,45 @@ function DashboardInner() {
   if (!user) {
     return (
       <>
-        <LandingPage onOpenAuth={() => setShowAuthModal(true)} />
-        {showAuthModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
-              <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">{authMode === 'login' ? 'Welcome back' : 'Create account'}</h2>
-                <button onClick={() => { setShowAuthModal(false); setShowForgotPw(false); setMessage('') }} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button>
+        <LandingPage onOpenAuth={(mode) => { setAuthMode(mode ?? 'login'); setShowAuthModal(true) }} />
+        {showAuthModal && !showForgotPw && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+            <div ref={authDialogRef} role="dialog" aria-modal="true" aria-labelledby="auth-title" className="w-full max-w-md rounded-[4px] border border-white/10 bg-[#131824] shadow-2xl" style={{ fontFamily: 'var(--font-hanken), "Hanken Grotesk", Arial, sans-serif' }}>
+              <div className="flex items-center justify-between px-6 py-5">
+                <h2 id="auth-title" className="text-2xl font-medium tracking-[-0.03em] text-[#e9edf3]">{authMode === 'login' ? 'Welcome back' : 'Create account'}</h2>
+                <button type="button" onClick={() => { setShowAuthModal(false); setShowForgotPw(false); setMessage('') }} className="text-sm text-[#8891a1] transition-colors hover:text-white">Close</button>
               </div>
-              <div className="p-6">
-                <div className="mb-6 flex rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
+              <div className="px-6 pb-6">
+                <div role="group" aria-label="Account access" className="mb-6 grid grid-cols-2 gap-1 rounded-[4px] bg-[#0a0d14] p-1">
                   {(['login', 'register'] as const).map(m => (
-                    <button key={m} type="button" onClick={() => { setAuthMode(m); setMessage('') }}
-                      className={`h-10 flex-1 rounded-md text-sm font-semibold capitalize transition-all ${authMode === m ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'}`}>{m}</button>
+                    <button key={m} type="button" aria-pressed={authMode === m} onClick={() => { setAuthMode(m); setMessage('') }}
+                      className={`h-10 rounded-[3px] text-sm font-medium transition-colors ${authMode === m ? 'bg-[#1b2231] text-[#e9edf3]' : 'text-[#8891a1] hover:text-[#e9edf3]'}`}>{m === 'login' ? 'Sign in' : 'Create account'}</button>
                   ))}
                 </div>
                 <form onSubmit={async (e) => { const ok = await handleAuth(e); if (ok) setShowAuthModal(false) }}>
                   {authMode === 'register' && (
-                    <label className="mb-4 block text-sm font-medium text-slate-700 dark:text-slate-300">Full name
+                    <label className="mb-4 block text-sm font-medium text-[#b4bdca]">Full name
                       <input value={authForm.fullName} onChange={e => setAuthForm({ ...authForm, fullName: e.target.value })}
-                        className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white" autoComplete="name" placeholder="John Doe" />
+                        className="mt-1.5 h-11 w-full rounded-[3px] border border-white/25 bg-[#0a0d14] px-3 text-sm text-[#e9edf3] outline-none transition-colors placeholder:text-[#8891a1] focus:border-[#5a9bfc]" autoComplete="name" placeholder="Your name" autoFocus />
                     </label>
                   )}
-                  <label className="mb-4 block text-sm font-medium text-slate-700 dark:text-slate-300">Email
+                  <label className="mb-4 block text-sm font-medium text-[#b4bdca]">Email
                     <input value={authForm.email} onChange={e => setAuthForm({ ...authForm, email: e.target.value })}
-                      className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white" autoComplete="email" type="email" placeholder="john@example.com" />
+                      className="mt-1.5 h-11 w-full rounded-[3px] border border-white/25 bg-[#0a0d14] px-3 text-sm text-[#e9edf3] outline-none transition-colors placeholder:text-[#8891a1] focus:border-[#5a9bfc]" autoComplete="email" type="email" placeholder="you@company.com" autoFocus />
                   </label>
-                  <label className="mb-5 block text-sm font-medium text-slate-700 dark:text-slate-300">Password
+                  <label className="mb-5 block text-sm font-medium text-[#b4bdca]">Password
                     <input value={authForm.password} onChange={e => setAuthForm({ ...authForm, password: e.target.value })}
-                      className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-                      autoComplete={authMode === 'login' ? 'current-password' : 'new-password'} type="password" placeholder={authMode === 'login' ? 'Enter your password' : 'Create a password'} />
+                      className="mt-1.5 h-11 w-full rounded-[3px] border border-white/25 bg-[#0a0d14] px-3 text-sm text-[#e9edf3] outline-none transition-colors placeholder:text-[#8891a1] focus:border-[#5a9bfc]"
+                      autoComplete={authMode === 'login' ? 'current-password' : 'new-password'} type="password" placeholder={authMode === 'login' ? 'Your password' : 'At least 6 characters'} />
                   </label>
-                  {message && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400">{message}</div>}
+                  {message && <div role="alert" className="mb-4 rounded-[3px] border border-[#f08c8c]/40 bg-[#f08c8c]/10 px-4 py-2.5 text-sm text-[#f08c8c]">{message}</div>}
                   {authMode === 'login' && (
-                    <button type="button" onClick={() => { setShowForgotPw(true); setMessage('') }} className="mb-4 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">Forgot password?</button>
+                    <button type="button" onClick={() => { setShowForgotPw(true); setMessage('') }} className="mb-4 text-sm font-medium text-[#5a9bfc] transition-colors hover:text-[#7db0ff]">Forgot password?</button>
                   )}
-                  <Tooltip text={authMode === 'login' ? 'Sign in to your account' : 'Create a new account'}>
-                    <button type="submit" disabled={loading}
-                      className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 font-semibold text-white hover:from-indigo-700 hover:to-purple-700 disabled:opacity-60">
-                      {loading && <Loader2 className="h-4 w-4 animate-spin" />}{authMode === 'login' ? 'Sign in' : 'Create account'}
-                    </button>
-                  </Tooltip>
+                  <button type="submit" disabled={loading}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-[3px] bg-[#5a9bfc] text-sm font-medium text-[#06101f] transition-colors hover:bg-[#7db0ff] disabled:opacity-60">
+                    {loading && <Loader2 className="h-4 w-4 animate-spin" />}{authMode === 'login' ? 'Sign in' : 'Create account'}
+                  </button>
                 </form>
               </div>
             </div>

@@ -1,368 +1,640 @@
 'use client'
 
-import { Activity, BarChart3, Bell, ChevronRight, Globe2, Layers, Menu, Moon, Shield, Sun, Users, X, Zap } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { useTheme } from './ThemeProvider'
-import Skeleton from './Skeleton'
+import { useEffect, useRef, useState } from 'react'
+import styles from './LandingPage.module.css'
+import { useLandingMotion } from './useLandingMotion'
+import { useSignalField, type SignalRange } from './useSignalField'
 
-interface Props {
-  onOpenAuth: () => void
+type Props = {
+  onOpenAuth: (mode?: 'login' | 'register') => void
 }
 
-const features = [
+type RangeKey = SignalRange
+type MonitorType = 'Website' | 'API' | 'Status page'
+type Interval = '1 min' | '5 min' | '15 min'
+type Channel = 'Email' | 'Webhook'
+type BadgeTheme = 'dark' | 'light'
+type LandingTheme = 'dark' | 'light'
+
+const rangeData: Record<RangeKey, { label: string; uptime: string; bars: number; down: number[] }> = {
+  '24h': { label: 'Last 24 hours', uptime: '100.00%', bars: 24, down: [] },
+  '7d': { label: 'Last 7 days', uptime: '99.99%', bars: 28, down: [11] },
+  '30d': { label: 'Last 30 days', uptime: '99.98%', bars: 30, down: [9, 22] },
+}
+
+const monitorTypes: Record<MonitorType, { host: string; path: string }> = {
+  Website: { host: 'your-site.com', path: 'Homepage' },
+  API: { host: 'api.your-site.com', path: 'Health endpoint' },
+  'Status page': { host: 'status.your-site.com', path: 'Public page' },
+}
+
+const faqs = [
   {
-    icon: <Activity className="h-6 w-6" />,
-    title: 'Real-time Monitoring',
-    desc: 'Check your websites every 5 minutes with configurable intervals. Get instant status updates.',
+    q: 'What can I monitor?',
+    a: 'Any public web address: a marketing site, an API endpoint, or a status page.',
   },
   {
-    icon: <BarChart3 className="h-6 w-6" />,
-    title: 'Response Time Analytics',
-    desc: 'Track response times with beautiful charts. Identify slowdowns before they become outages.',
+    q: 'How often does it check?',
+    a: 'Every five minutes by default. Each check records the status, the response time, and why it failed.',
   },
   {
-    icon: <Bell className="h-6 w-6" />,
-    title: 'Instant Alerts',
-    desc: 'Get notified via email, Slack, or Discord when your sites go down. Never miss an incident.',
+    q: 'How will I know?',
+    a: 'Email and webhook alerts, sent when a monitor changes state.',
   },
   {
-    icon: <Users className="h-6 w-6" />,
-    title: 'Team Collaboration',
-    desc: 'Invite team members, assign roles, and manage access. Work together on uptime monitoring.',
-  },
-  {
-    icon: <Globe2 className="h-6 w-6" />,
-    title: 'Multi-region Checks',
-    desc: 'Monitor from multiple locations worldwide. Ensure global availability for your users.',
-  },
-  {
-    icon: <Shield className="h-6 w-6" />,
-    title: '99.9% Uptime SLA',
-    desc: 'Built on enterprise infrastructure. Your monitoring stays up so your sites stay up.',
+    q: 'Can I share the result?',
+    a: 'Yes. Publish a status page for any monitor and share it with people who do not have an account.',
   },
 ]
 
-const pricing = [
-  {
-    name: 'Free',
-    price: '$0',
-    period: '/month',
-    features: ['10 websites', '5-minute checks', 'Email alerts', '24h history', '1 team member'],
-    cta: 'Get Started',
-    popular: false,
-  },
-  {
-    name: 'Pro',
-    price: '$29',
-    period: '/month',
-    features: ['50 websites', '1-minute checks', 'Slack & Discord alerts', '90-day history', '5 team members', 'API access'],
-    cta: 'Start Free Trial',
-    popular: true,
-  },
-  {
-    name: 'Enterprise',
-    price: '$99',
-    period: '/month',
-    features: ['Unlimited websites', '30-second checks', 'All alert channels', '2-year history', 'Unlimited team members', 'Priority support', 'Custom integrations'],
-    cta: 'Contact Sales',
-    popular: false,
-  },
-]
+function Timeline({ bars, down, className }: { bars: number; down: number[]; className?: string }) {
+  return (
+    <div className={`${styles.timeline} ${className ?? ''}`} aria-hidden="true" data-timeline>
+      {Array.from({ length: bars }, (_, i) => (
+        <span
+          key={i}
+          className={`${styles.bar} ${down.includes(i) ? styles.barDown : ''}`}
+        />
+      ))}
+    </div>
+  )
+}
 
 export default function LandingPage({ onOpenAuth }: Props) {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const signalCanvasRef = useRef<HTMLCanvasElement>(null)
+  const featuresCanvasRef = useRef<HTMLCanvasElement>(null)
+  const statusCanvasRef = useRef<HTMLCanvasElement>(null)
+  const faqCanvasRef = useRef<HTMLCanvasElement>(null)
+  const ctaCanvasRef = useRef<HTMLCanvasElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [loaded, setLoaded] = useState(false)
-  const { theme, toggleTheme } = useTheme()
+  const [range, setRange] = useState<RangeKey>('30d')
+  const [monitorType, setMonitorType] = useState<MonitorType>('Website')
+  const [interval, setInterval] = useState<Interval>('5 min')
+  const [channel, setChannel] = useState<Channel>('Email')
+  const [publicPage, setPublicPage] = useState(true)
+  const [badgeTheme, setBadgeTheme] = useState<BadgeTheme>('dark')
+  const [activeFaq, setActiveFaq] = useState(0)
+  const [landingTheme, setLandingTheme] = useState<LandingTheme>('dark')
 
   useEffect(() => {
-    const t = setTimeout(() => setLoaded(true), 400)
-    return () => clearTimeout(t)
+    let saved: string | null = null
+    try {
+      saved = localStorage.getItem('kingx_landing_theme')
+    } catch {
+      return
+    }
+    if (saved !== 'dark' && saved !== 'light') return
+    const next = saved
+    const id = window.setTimeout(() => setLandingTheme(next), 0)
+    return () => window.clearTimeout(id)
   }, [])
 
-  if (!loaded) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-slate-950">
-        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-3">
-            <div className="flex items-center gap-2.5">
-              <Skeleton className="h-9 w-9 rounded-lg" />
-              <Skeleton className="h-5 w-24" />
-            </div>
-            <div className="flex items-center gap-3">
-              <Skeleton className="h-5 w-5 rounded" />
-              <Skeleton className="h-9 w-20 rounded-lg" />
-              <Skeleton className="h-9 w-20 rounded-lg" />
-            </div>
-          </div>
-        </div>
-        <main className="mx-auto max-w-7xl px-4 pt-24 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center text-center">
-            <Skeleton className="mb-6 h-12 w-3/4 max-w-lg" />
-            <Skeleton className="mb-2 h-6 w-5/6 max-w-xl" />
-            <Skeleton className="mb-8 h-6 w-4/6 max-w-md" />
-            <div className="flex gap-4">
-              <Skeleton className="h-12 w-36 rounded-xl" />
-              <Skeleton className="h-12 w-36 rounded-xl" />
-            </div>
-          </div>
-          <div className="mt-20 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {[1,2,3,4,5,6].map(i => (
-              <div key={i} className="rounded-2xl border border-slate-200 p-6 dark:border-slate-800">
-                <Skeleton className="mb-4 h-10 w-10 rounded-lg" />
-                <Skeleton className="mb-2 h-5 w-32" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="mt-1 h-4 w-3/4" />
-              </div>
-            ))}
-          </div>
-        </main>
-      </div>
-    )
+  useEffect(() => {
+    const html = document.documentElement
+    const previousBody = document.body.style.backgroundColor
+    const previousHtml = html.style.backgroundColor
+    const previousScheme = html.style.colorScheme
+    const background = landingTheme === 'dark' ? '#050607' : '#f3f1ea'
+    document.body.style.backgroundColor = background
+    html.style.backgroundColor = background
+    html.style.colorScheme = landingTheme
+    return () => {
+      document.body.style.backgroundColor = previousBody
+      html.style.backgroundColor = previousHtml
+      html.style.colorScheme = previousScheme
+    }
+  }, [landingTheme])
+
+  useEffect(() => {
+    const html = document.documentElement
+    const previousPadding = html.style.scrollPaddingTop
+    const previousBehavior = html.style.scrollBehavior
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const coarsePointer = window.matchMedia('(hover: none), (pointer: coarse)').matches
+    html.style.scrollPaddingTop = '88px'
+    if (!reduceMotion && coarsePointer) html.style.scrollBehavior = 'smooth'
+    return () => {
+      html.style.scrollPaddingTop = previousPadding
+      html.style.scrollBehavior = previousBehavior
+    }
+  }, [])
+
+  useLandingMotion(rootRef)
+  useSignalField(signalCanvasRef, landingTheme, range)
+  useSignalField(featuresCanvasRef, landingTheme, range)
+  useSignalField(statusCanvasRef, landingTheme, range)
+  useSignalField(faqCanvasRef, landingTheme, range)
+  useSignalField(ctaCanvasRef, landingTheme, range, true)
+
+  const selectedRange = rangeData[range]
+  const selectedMonitor = monitorTypes[monitorType]
+
+  const toggleLandingTheme = () => {
+    const next = landingTheme === 'dark' ? 'light' : 'dark'
+    setLandingTheme(next)
+    try {
+      localStorage.setItem('kingx_landing_theme', next)
+    } catch {
+      return
+    }
   }
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-white">
-      <header className="fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-white/80 backdrop-blur-lg dark:border-slate-800 dark:bg-slate-900/80">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2.5">
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg">
-              <Activity className="h-5 w-5" />
-            </div>
-            <span className="text-lg font-bold tracking-tight">KingX</span>
+    <div className={styles.root} ref={rootRef} data-theme={landingTheme}>
+      <a href="#main" className={styles.skipLink}>Skip to content</a>
+
+      <header className={styles.header}>
+        <div className={`${styles.shell} ${styles.headerRow}`}>
+          <a href="#top" className={styles.brand} aria-label="KingX home">
+            <span className={styles.brandMark} aria-hidden="true" />
+            KingX
+          </a>
+
+          <div className={styles.headerActions}>
+            <nav className={styles.nav} aria-label="Main">
+              <a href="#product" className={styles.navLink}>Product</a>
+              <a href="#status-page" className={styles.navLink}>Status pages</a>
+              <a href="#questions" className={styles.navLink}>Questions</a>
+              <button type="button" className={styles.navAction} onClick={() => onOpenAuth('login')}>Sign in</button>
+            </nav>
+
+            <button
+              type="button"
+              className={styles.themeToggle}
+              role="switch"
+              aria-checked={landingTheme === 'light'}
+              aria-label="Light theme"
+              onClick={toggleLandingTheme}
+            >
+              <span className={styles.themeTrack} aria-hidden="true">
+                <span className={styles.themeThumb} />
+              </span>
+              <span className={styles.themeText}>{landingTheme === 'light' ? 'Light' : 'Dark'}</span>
+            </button>
+
+            <button
+              type="button"
+              className={styles.menuButton}
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-expanded={menuOpen}
+              aria-controls="landing-menu"
+            >
+              {menuOpen ? 'Close' : 'Menu'}
+            </button>
           </div>
-
-          <nav className="hidden items-center gap-8 md:flex">
-            <a href="#features" className="text-sm font-medium text-slate-600 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">Features</a>
-            <a href="#pricing" className="text-sm font-medium text-slate-600 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">Pricing</a>
-            <a href="#about" className="text-sm font-medium text-slate-600 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">About</a>
-          </nav>
-
-          <div className="hidden items-center gap-2 md:flex">
-            <button onClick={toggleTheme} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
-              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
-            <button onClick={onOpenAuth} className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
-              Sign in
-            </button>
-            <button onClick={onOpenAuth} className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-2 text-sm font-semibold text-white shadow-md transition hover:from-indigo-700 hover:to-purple-700">
-              Get Started
-            </button>
-          </div>
-
-          <button onClick={() => setMenuOpen(!menuOpen)} className="grid h-9 w-9 place-items-center rounded-lg text-slate-600 md:hidden dark:text-slate-400">
-            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
         </div>
 
         {menuOpen && (
-          <div className="border-t border-slate-200 bg-white px-4 pb-4 pt-2 md:hidden dark:border-slate-800 dark:bg-slate-900">
-            <nav className="flex flex-col gap-2">
-              <a href="#features" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800">Features</a>
-              <a href="#pricing" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800">Pricing</a>
-              <a href="#about" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800">About</a>
-              <hr className="my-1 border-slate-200 dark:border-slate-700" />
-              <button onClick={() => { toggleTheme(); setMenuOpen(false) }} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800">
-                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />} {theme === 'dark' ? 'Light' : 'Dark'} Mode
-              </button>
-              <button onClick={() => { setMenuOpen(false); onOpenAuth() }} className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800">Sign in</button>
-              <button onClick={() => { setMenuOpen(false); onOpenAuth() }} className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-2 text-sm font-semibold text-white">Get Started</button>
-            </nav>
+          <div id="landing-menu" className={styles.menu}>
+            <a href="#product" className={styles.menuLink} onClick={() => setMenuOpen(false)}>Product</a>
+            <a href="#status-page" className={styles.menuLink} onClick={() => setMenuOpen(false)}>Status pages</a>
+            <a href="#questions" className={styles.menuLink} onClick={() => setMenuOpen(false)}>Questions</a>
+            <button
+              type="button"
+              className={styles.menuAction}
+              onClick={() => { setMenuOpen(false); onOpenAuth('login') }}
+            >
+              Sign in
+            </button>
           </div>
         )}
       </header>
 
-      <section className="relative min-h-screen pt-16">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-200/30 via-transparent to-transparent dark:from-indigo-500/10" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-purple-200/20 via-transparent to-transparent dark:from-purple-500/10" />
+      <main id="main">
+        <section className={styles.hero} id="top" aria-labelledby="hero-title">
+          <canvas ref={signalCanvasRef} className={styles.signalField} aria-hidden="true" />
 
-        <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl flex-col items-center justify-center px-4 py-20 sm:px-6 lg:px-8">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-1.5 text-sm font-medium text-indigo-700 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
-            <Zap className="h-4 w-4" />
-            Now in public beta &middot; Free to use
-          </div>
+          <div className={`${styles.shell} ${styles.heroStage}`}>
+            <div className={styles.heroGrid}>
+              <div className={styles.heroIntro}>
+                <h1 id="hero-title" className={styles.heroHeadline}>
+                  <span>{"You'll know"}</span>
+                  <span>when it breaks.</span>
+                </h1>
 
-          <h1 className="max-w-4xl text-center text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-            Monitor your websites{' '}
-            <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">with confidence</span>
-          </h1>
-          <p className="mt-6 max-w-2xl text-center text-lg leading-relaxed text-slate-600 dark:text-slate-400">
-            Track uptime, response times, and incidents across all your websites.
-            Get alerted when things go down. Collaborate with your team.
-          </p>
+                <p className={styles.heroCopy}>
+                  KingX checks your sites every five minutes and tells you the moment one stops responding.
+                </p>
 
-          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
-            <button
-              onClick={onOpenAuth}
-              className="flex h-12 items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-8 text-base font-semibold text-white shadow-lg shadow-indigo-200 transition hover:from-indigo-700 hover:to-purple-700 dark:shadow-indigo-500/20"
-            >
-              Start Monitoring Free
-              <ChevronRight className="h-5 w-5" />
-            </button>
-            <a
-              href="#features"
-              className="flex h-12 items-center gap-2 rounded-xl border border-slate-300 bg-white px-8 text-base font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-            >
-              See Features
-            </a>
-          </div>
-
-          <div className="mt-16 grid w-full max-w-4xl gap-6 sm:grid-cols-3">
-            {[
-              ['10K+', 'Websites Monitored'],
-              ['99.9%', 'Average Uptime'],
-              ['< 30s', 'Alert Delivery'],
-            ].map(([stat, label]) => (
-              <div key={label} className="rounded-2xl border border-slate-200 bg-white/60 p-6 text-center backdrop-blur-sm dark:border-slate-700 dark:bg-slate-800/60">
-                <p className="text-3xl font-bold text-indigo-600">{stat}</p>
-                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="features" className="relative border-t border-slate-200 bg-white py-24 dark:border-slate-800 dark:bg-slate-900">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">Features</p>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
-              Everything you need to stay online
-            </h2>
-            <p className="mt-4 text-lg text-slate-600 dark:text-slate-400">
-              Built for developers and teams who need reliable monitoring without the complexity.
-            </p>
-          </div>
-
-          <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((f) => (
-              <div key={f.title} className="group rounded-2xl border border-slate-200 p-6 transition hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-100 dark:border-slate-700 dark:hover:border-indigo-700 dark:hover:shadow-indigo-900/20">
-                <div className="mb-4 grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-600 ring-1 ring-indigo-100 dark:from-indigo-900/30 dark:to-purple-900/30 dark:text-indigo-400 dark:ring-indigo-800/50">
-                  {f.icon}
+                <div className={styles.heroActions}>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={() => onOpenAuth('register')}
+                  >
+                    Start monitoring
+                  </button>
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{f.desc}</p>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      <section className="relative border-t border-slate-200 bg-gradient-to-br from-indigo-50 to-purple-50 py-24 dark:border-slate-800 dark:from-slate-900 dark:to-slate-900">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">Stats</p>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
-              Trusted by growing teams
-            </h2>
-          </div>
+              <div className={styles.heroFrame}>
+                <div className={styles.heroScene} data-hero-scene>
+                  <div className={styles.heroTilt} data-hero-tilt>
+                    <div className={styles.statusCard} data-ui="true" aria-label="Monitor preview">
+                      <div className={styles.statusTop}>
+                        <span className={styles.previewLabel}>Preview</span>
+                        <span className={styles.previewLabel}>{selectedMonitor.path}</span>
+                      </div>
 
-          <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { icon: <Globe2 className="h-5 w-5" />, stat: '10,000+', label: 'Websites Monitored', color: 'text-indigo-600' },
-              { icon: <Activity className="h-5 w-5" />, stat: '1M+', label: 'Daily Checks', color: 'text-emerald-600' },
-              { icon: <Users className="h-5 w-5" />, stat: '500+', label: 'Active Teams', color: 'text-amber-600' },
-              { icon: <Bell className="h-5 w-5" />, stat: '< 30s', label: 'Alert Delivery', color: 'text-purple-600' },
-            ].map((s) => (
-              <div key={s.label} className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                <div className={`mx-auto mb-3 grid h-12 w-12 place-items-center rounded-xl bg-white ${s.color} ring-1 ring-slate-200 dark:bg-slate-700 dark:ring-slate-600`}>
-                  {s.icon}
-                </div>
-                <p className={`text-2xl font-bold ${s.color}`}>{s.stat}</p>
-                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+                      <div className={styles.statusMonitor}>
+                        <span className={`${styles.dot} ${styles.dotLive}`} aria-hidden="true" />
+                        <div className={styles.monitorText}>
+                          <span className={styles.monitorHost}>{selectedMonitor.host}</span>
+                          <span className={styles.monitorPath}>{monitorType}</span>
+                        </div>
+                        <span className={styles.statusState}>Operational</span>
+                      </div>
 
-      <section id="pricing" className="relative border-t border-slate-200 bg-white py-24 dark:border-slate-800 dark:bg-slate-900">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">Pricing</p>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
-              Simple, transparent pricing
-            </h2>
-            <p className="mt-4 text-lg text-slate-600 dark:text-slate-400">
-              Start free. Upgrade when you grow.
-            </p>
-          </div>
+                      <div className={styles.uptimeRow}>
+                        <span className={styles.uptimeValue}>{selectedRange.uptime}</span>
+                        <span className={styles.uptimeMeta}>{selectedRange.label}<br />Uptime</span>
+                      </div>
 
-          <div className="mt-16 grid gap-8 lg:grid-cols-3">
-            {pricing.map((plan) => (
-              <div
-                key={plan.name}
-                className={`relative rounded-2xl border p-8 ${
-                  plan.popular
-                    ? 'border-indigo-200 bg-gradient-to-b from-indigo-50 to-white shadow-xl shadow-indigo-100 dark:border-indigo-700 dark:from-indigo-950/50 dark:to-slate-900 dark:shadow-indigo-900/20'
-                    : 'border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800'
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-1 text-xs font-semibold text-white shadow-md">
-                    Most Popular
+                      <fieldset className={styles.range}>
+                        <legend className={styles.srOnly}>Time range</legend>
+                        {(['24h', '7d', '30d'] as RangeKey[]).map((key) => (
+                          <button
+                            key={key}
+                            type="button"
+                            className={styles.rangeButton}
+                            aria-pressed={range === key}
+                            onClick={() => setRange(key)}
+                          >
+                            {key}
+                          </button>
+                        ))}
+                      </fieldset>
+
+                      <Timeline bars={selectedRange.bars} down={selectedRange.down} />
+
+                      <div className={styles.statusFooter}>
+                        <span>Response 182 ms</span>
+                        <span>Checked 30s ago</span>
+                      </div>
+                    </div>
                   </div>
-                )}
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{plan.name}</h3>
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-slate-900 dark:text-white">{plan.price}</span>
-                  <span className="text-sm text-slate-500 dark:text-slate-400">{plan.period}</span>
                 </div>
-                <ul className="mt-6 space-y-3">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
-                      <Layers className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={onOpenAuth}
-                  className={`mt-8 flex h-11 w-full items-center justify-center rounded-xl text-sm font-semibold transition ${
-                    plan.popular
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md hover:from-indigo-700 hover:to-purple-700'
-                      : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
-                  }`}
+              </div>
+            </div>
+
+            <div className={styles.heroFoot} aria-hidden="true">
+              <span>Signal preview</span>
+              <span className={styles.heroHint}>
+                <span className={styles.hintPointer}>Move to disturb</span>
+                <span className={styles.hintTouch}>Tap to disturb</span>
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <section id="product" className={styles.features} aria-labelledby="product-title">
+          <canvas ref={featuresCanvasRef} className={styles.signalField} aria-hidden="true" />
+
+          <div className={`${styles.shell} ${styles.featuresGrid}`}>
+            <div className={styles.featuresSticky}>
+              <div className={styles.outputDepth} data-reveal>
+                <div className={styles.outputCard} data-ui="true" aria-label="Monitor configuration preview">
+                  <div className={styles.outputTop}>
+                    <span className={styles.previewLabel}>Preview</span>
+                    <span className={styles.previewLabel}>{monitorType}</span>
+                  </div>
+                  <p className={styles.outputHost}>{selectedMonitor.host}</p>
+                  <p className={styles.outputPath}>{selectedMonitor.path}</p>
+
+                  <div className={styles.outputState}>
+                    <span className={styles.dot} aria-hidden="true" />
+                    <span>Operational</span>
+                  </div>
+
+                  <div className={styles.outputUptimeRow}>
+                    <span className={styles.outputUptime}>{rangeData['30d'].uptime}</span>
+                    <span className={styles.outputUptimeMeta}>Last 30 days<br />Uptime</span>
+                  </div>
+
+                  <Timeline bars={30} down={[9, 22]} className={styles.outputTimeline} />
+
+                  <div className={styles.outputMeta}>
+                    <div className={styles.outputMetaItem}>
+                      <span className={styles.outputMetaLabel}>Check</span>
+                      <span className={styles.outputMetaValue}>{interval}</span>
+                    </div>
+                    <div className={styles.outputMetaItem}>
+                      <span className={styles.outputMetaLabel}>Alert</span>
+                      <span className={styles.outputMetaValue}>{channel}</span>
+                    </div>
+                    <div className={styles.outputMetaItem}>
+                      <span className={styles.outputMetaLabel}>Page</span>
+                      <span className={styles.outputMetaValue}>{publicPage ? 'Public' : 'Private'}</span>
+                    </div>
+                  </div>
+
+                  <p className={styles.outputMetaCompact}>
+                    {interval}, {channel}, {publicPage ? 'Public' : 'Private'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.featuresContent}>
+              <div className={styles.sectionHead}>
+                <h2 id="product-title">Watch, record, tell.</h2>
+                <p data-reveal style={{ '--reveal-delay': '70ms' } as React.CSSProperties}>
+                  Set an address once. KingX handles the rest.
+                </p>
+              </div>
+
+              <div className={styles.featureBlock}>
+                <h3>Watch any endpoint.</h3>
+                <p data-reveal style={{ '--reveal-delay': '70ms' } as React.CSSProperties}>
+                  A website, an API, or a status page. One address is enough to begin.
+                </p>
+                <div
+                  className={styles.controlGroup}
+                  role="group"
+                  aria-label="Monitor type"
+                  data-reveal
+                  style={{ '--reveal-delay': '140ms' } as React.CSSProperties}
                 >
-                  {plan.cta}
+                  {(['Website', 'API', 'Status page'] as MonitorType[]).map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      className={styles.controlButton}
+                      aria-pressed={monitorType === type}
+                      onClick={() => setMonitorType(type)}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.featureBlock}>
+                <h3>Choose the rhythm.</h3>
+                <p data-reveal style={{ '--reveal-delay': '70ms' } as React.CSSProperties}>
+                  Check as often as you need. Every result is recorded.
+                </p>
+                <div
+                  className={styles.controlGroup}
+                  role="group"
+                  aria-label="Check interval"
+                  data-reveal
+                  style={{ '--reveal-delay': '140ms' } as React.CSSProperties}
+                >
+                  {(['1 min', '5 min', '15 min'] as Interval[]).map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={styles.controlButton}
+                      aria-pressed={interval === value}
+                      onClick={() => setInterval(value)}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.featureBlock}>
+                <h3>Tell the right people.</h3>
+                <p data-reveal style={{ '--reveal-delay': '70ms' } as React.CSSProperties}>
+                  Send an alert by email or webhook when the state changes.
+                </p>
+                <div
+                  className={styles.controlGroup}
+                  role="group"
+                  aria-label="Alert channel"
+                  data-reveal
+                  style={{ '--reveal-delay': '140ms' } as React.CSSProperties}
+                >
+                  {(['Email', 'Webhook'] as Channel[]).map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={styles.controlButton}
+                      aria-pressed={channel === value}
+                      onClick={() => setChannel(value)}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.featureBlock}>
+                <h3>Share the answer.</h3>
+                <p data-reveal style={{ '--reveal-delay': '70ms' } as React.CSSProperties}>
+                  Publish a status page your customers can read without an account.
+                </p>
+                <button
+                  type="button"
+                  className={styles.toggle}
+                  role="switch"
+                  aria-checked={publicPage}
+                  onClick={() => setPublicPage(!publicPage)}
+                  data-reveal
+                  style={{ '--reveal-delay': '140ms' } as React.CSSProperties}
+                >
+                  <span className={styles.toggleTrack} aria-hidden="true">
+                    <span className={styles.toggleThumb} />
+                  </span>
+                  <span>Public status page</span>
+                  <span className={styles.toggleState}>{publicPage ? 'On' : 'Off'}</span>
                 </button>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="about" className="relative border-t border-slate-200 bg-gradient-to-br from-slate-900 to-slate-950 py-24 text-white dark:border-slate-800">
-        <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold sm:text-4xl">
-            Ready to start monitoring?
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-lg text-slate-300">
-            Join thousands of teams who trust KingX to keep their websites online.
-          </p>
-          <button
-            onClick={onOpenAuth}
-            className="mt-8 inline-flex h-12 items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-8 text-base font-semibold text-white shadow-lg shadow-indigo-500/20 transition hover:from-indigo-600 hover:to-purple-600"
-          >
-            Get Started Free
-            <ChevronRight className="h-5 w-5" />
-          </button>
-        </div>
-      </section>
-
-      <footer className="border-t border-slate-200 bg-white py-12 dark:border-slate-800 dark:bg-slate-900">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
-            <div className="flex items-center gap-2.5">
-              <div className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 text-white">
-                <Activity className="h-4 w-4" />
-              </div>
-              <span className="font-bold tracking-tight text-slate-900 dark:text-white">KingX</span>
             </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              &copy; {new Date().getFullYear()} KingX. Built with TypeScript, Next.js &bull; Open source
-            </p>
           </div>
+        </section>
+
+        <section id="status-page" className={styles.statusSection} aria-labelledby="status-title">
+          <canvas ref={statusCanvasRef} className={styles.signalField} aria-hidden="true" />
+
+          <div className={`${styles.shell} ${styles.statusGrid}`}>
+            <div className={styles.statusCopy}>
+              <h2 id="status-title">The page your customers check.</h2>
+              <p data-reveal style={{ '--reveal-delay': '70ms' } as React.CSSProperties}>
+                Publish a plain status page. It shows what is up, what is down, and what changed, without exposing your dashboard.
+              </p>
+
+              <dl className={styles.statusFacts}>
+                <div>
+                  <dt>Access</dt>
+                  <dd>Public link</dd>
+                </div>
+                <div>
+                  <dt>Account</dt>
+                  <dd>Not required</dd>
+                </div>
+                <div>
+                  <dt>Exposes</dt>
+                  <dd>Status only</dd>
+                </div>
+              </dl>
+
+              <div
+                className={styles.badgeDepth}
+                data-reveal
+                style={{ '--reveal-delay': '140ms' } as React.CSSProperties}
+              >
+                <div className={styles.badgeCard} data-ui="true" aria-label="Status badge preview">
+                  <div>
+                    <p className={styles.badgeLabel}>Status badge</p>
+                    <div className={`${styles.badgePreview} ${badgeTheme === 'light' ? styles.badgePreviewLight : ''}`}>
+                      <span className={styles.dot} aria-hidden="true" />
+                      <span className={styles.badgeText}>Operational</span>
+                      <span className={styles.badgeMeta}>99.98%</span>
+                    </div>
+                  </div>
+                  <div className={styles.badgeControl} role="group" aria-label="Badge theme">
+                    {(['dark', 'light'] as BadgeTheme[]).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={styles.badgeButton}
+                        aria-pressed={badgeTheme === value}
+                        onClick={() => setBadgeTheme(value)}
+                      >
+                        {value === 'dark' ? 'Dark' : 'Light'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className={styles.statusPanelDepth}
+              data-reveal
+              style={{ '--reveal-delay': '140ms' } as React.CSSProperties}
+            >
+              <div className={styles.statusPanel}>
+                <div className={styles.statusPanelBar}>
+                  <span className={styles.statusPanelUrl}>status.your-site.com</span>
+                  <span className={styles.statusPanelTag}>Public</span>
+                </div>
+
+                <div className={styles.statusPanelHead}>
+                  <div>
+                    <span className={styles.previewLabel}>Preview</span>
+                    <p className={styles.statusPanelTitle}>Your status page</p>
+                  </div>
+                  <span className={styles.statusPanelState}>
+                    <span className={styles.dot} aria-hidden="true" />
+                    Operational
+                  </span>
+                </div>
+
+                <div className={styles.statusPanelRows} data-ui="true" aria-label="Status page rows preview">
+                  {[
+                    { name: 'Website', uptime: '99.98%' },
+                    { name: 'API', uptime: '99.99%' },
+                    { name: 'Status page', uptime: '100.00%' },
+                  ].map((row) => (
+                    <div className={styles.statusPanelRow} key={row.name}>
+                      <span className={styles.statusPanelName}>{row.name}</span>
+                      <span className={styles.statusPanelState}>
+                        <span className={styles.dot} aria-hidden="true" />
+                        Operational
+                      </span>
+                      <span className={styles.statusPanelUptime}>{row.uptime}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <Timeline bars={30} down={[9, 22]} className={styles.statusTimeline} />
+
+                <div className={styles.statusPanelFootRow}>
+                  <p className={styles.statusPanelFoot}>Updated 30 seconds ago</p>
+                  <span className={styles.statusPanelFootMeta}>Read only</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="questions" className={styles.faq} aria-labelledby="faq-title">
+          <canvas ref={faqCanvasRef} className={styles.signalField} aria-hidden="true" />
+
+          <div className={`${styles.shell} ${styles.faqGrid}`}>
+            <div>
+              <h2 id="faq-title">Questions, answered.</h2>
+              <div className={styles.faqList}>
+                {faqs.map((item, i) => (
+                  <div
+                    key={item.q}
+                    className={`${styles.faqItem} ${activeFaq === i ? styles.faqItemActive : ''}`}
+                    data-reveal
+                    style={{ '--reveal-delay': `${i * 60}ms` } as React.CSSProperties}
+                  >
+                    <button
+                      type="button"
+                      className={styles.faqQuestion}
+                      aria-expanded={activeFaq === i}
+                      aria-controls={`faq-inline-${i}`}
+                      onClick={() => setActiveFaq(i)}
+                      onMouseEnter={() => setActiveFaq(i)}
+                      onFocus={() => setActiveFaq(i)}
+                    >
+                      <span className={styles.faqText}>{item.q}</span>
+                      <span className={styles.faqMark} aria-hidden="true" />
+                    </button>
+                    <p id={`faq-inline-${i}`} className={styles.faqInline} hidden={activeFaq !== i}>
+                      {item.a}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.faqAnswerPane} aria-live="polite">
+              <span className={styles.faqGlyph} aria-hidden="true">?</span>
+              <p key={activeFaq} className={styles.faqAnswer}>{faqs[activeFaq].a}</p>
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.cta} aria-labelledby="cta-title">
+          <canvas ref={ctaCanvasRef} className={styles.signalField} aria-hidden="true" />
+          <span className={styles.ctaOrbit} aria-hidden="true" />
+          <div className={`${styles.shell} ${styles.ctaShell}`}>
+            <div className={styles.ctaInner}>
+              <div className={styles.ctaCopyBlock}>
+                <h2 id="cta-title" className={styles.ctaTitle}>Start with one URL.</h2>
+                <p className={styles.ctaCopy} data-reveal style={{ '--reveal-delay': '70ms' } as React.CSSProperties}>
+                  Create an account, add a site, and see the first check.
+                </p>
+              </div>
+              <button type="button" className={styles.ctaButton} onClick={() => onOpenAuth('register')}>
+                Create your account
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className={styles.footer}>
+        <div className={`${styles.shell} ${styles.footerRow}`}>
+          <div className={styles.footerIdentity}>
+            <a href="#top" className={styles.footerBrand} aria-label="KingX home">
+              <span className={styles.brandMark} aria-hidden="true" />
+              KingX
+            </a>
+            <p>Know the moment a site stops responding.</p>
+          </div>
+
+          <nav className={styles.footerNav} aria-label="Footer">
+            <a href="#product" className={styles.footerLink}>Product</a>
+            <a href="#status-page" className={styles.footerLink}>Status pages</a>
+            <a href="#questions" className={styles.footerLink}>Questions</a>
+          </nav>
+
+          <a href="#top" className={styles.footerTop}>Back to top</a>
+        </div>
+
+        <div className={`${styles.shell} ${styles.footerBase}`}>
+          <p>KingX, uptime monitoring.</p>
+          <p>{new Date().getFullYear()}</p>
         </div>
       </footer>
     </div>
