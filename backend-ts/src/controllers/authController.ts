@@ -1,17 +1,24 @@
 import crypto from 'crypto'
 import { Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
+import { Prisma } from '@prisma/client'
 import prisma from '../config/prisma'
 import { generateToken } from '../utils/jwt'
+import { sendPasswordResetEmail } from '../services/emailService'
 import type { AuthRequest } from '../middleware/auth'
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const MIN_PASSWORD_LENGTH = 6
+const hashResetToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex')
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { password, fullName } = req.body
+    const password = typeof req.body.password === 'string' ? req.body.password : ''
+    const fullName = typeof req.body.fullName === 'string' ? req.body.fullName.trim() : ''
     const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : ''
 
-    if (!email || !password || !fullName) {
-      res.status(400).json({ error: 'Email, password, and fullName are required' })
+    if (!EMAIL_PATTERN.test(email) || !fullName || fullName.length > 100 || password.length < MIN_PASSWORD_LENGTH) {
+      res.status(400).json({ error: `A valid email, name, and password of at least ${MIN_PASSWORD_LENGTH} characters are required` })
       return
     }
 
@@ -49,6 +56,10 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       user,
     })
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      res.status(400).json({ error: 'Email already registered' })
+      return
+    }
     console.error('Register error:', error)
     res.status(500).json({ error: 'Internal server error' })
   }
@@ -56,11 +67,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { password } = req.body
+    const password = typeof req.body.password === 'string' ? req.body.password : ''
     const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : ''
 
-    if (!email || !password) {
-      res.status(400).json({ error: 'Email and password are required' })
+    if (!EMAIL_PATTERN.test(email) || !password) {
+      res.status(400).json({ error: 'A valid email and password are required' })
       return
     }
 
@@ -124,15 +135,16 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
 export const changePassword = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId!
-    const { currentPassword, newPassword } = req.body
+    const currentPassword = typeof req.body.currentPassword === 'string' ? req.body.currentPassword : ''
+    const newPassword = typeof req.body.newPassword === 'string' ? req.body.newPassword : ''
 
     if (!currentPassword || !newPassword) {
       res.status(400).json({ error: 'Current password and new password are required' })
       return
     }
 
-    if (newPassword.length < 6) {
-      res.status(400).json({ error: 'Password must be at least 6 characters' })
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` })
       return
     }
 
@@ -188,8 +200,13 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { resetToken, resetExpires },
+      data: { resetToken: hashResetToken(resetToken), resetExpires },
     })
+
+    const sent = await sendPasswordResetEmail(email, resetToken)
+    if (!sent && process.env.NODE_ENV !== 'production') {
+      console.info('[auth] Password reset token (development only):', resetToken)
+    }
 
     res.json({ message: 'If an account with that email exists, a reset link has been sent' })
   } catch (error) {
@@ -200,21 +217,24 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
 
 export const resetPassword = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { token, newPassword } = req.body
+    const token = typeof req.body.token === 'string' ? req.body.token.trim() : ''
+    const newPassword = typeof req.body.newPassword === 'string'
+      ? req.body.newPassword
+      : typeof req.body.password === 'string' ? req.body.password : ''
 
     if (!token || !newPassword) {
       res.status(400).json({ error: 'Token and new password are required' })
       return
     }
 
-    if (newPassword.length < 6) {
-      res.status(400).json({ error: 'Password must be at least 6 characters' })
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` })
       return
     }
 
     const user = await prisma.user.findFirst({
       where: {
-        resetToken: token,
+        resetToken: hashResetToken(token),
         resetExpires: { gt: new Date() },
       },
     })

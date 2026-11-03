@@ -1,4 +1,6 @@
+import { lookup } from 'node:dns/promises'
 import { CheckMethod, WebsiteStatus, KeywordCheckType } from '@prisma/client'
+import { isPrivateAddress, normalizeMonitorUrl } from '../utils/url'
 
 export interface MonitorResult {
   status: WebsiteStatus
@@ -18,11 +20,25 @@ interface CheckOptions {
 export const checkWebsite = async (options: CheckOptions): Promise<MonitorResult> => {
   const { url, method, timeout, keywordCheck, keywordType } = options
   const startedAt = Date.now()
+  const safeUrl = normalizeMonitorUrl(url)
+
+  if (!safeUrl) {
+    return { status: 'DOWN', responseTime: 0, error: 'URL is not allowed' }
+  }
+
+  if (process.env.ALLOW_PRIVATE_MONITOR_TARGETS !== 'true') {
+    const hostname = new URL(safeUrl).hostname
+    const addresses = await lookup(hostname, { all: true }).catch(() => [])
+    if (addresses.some((entry) => isPrivateAddress(entry.address))) {
+      return { status: 'DOWN', responseTime: Date.now() - startedAt, error: 'URL resolves to a private address' }
+    }
+  }
+
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeout)
 
   try {
-    const response = await fetch(url, {
+    const response = await fetch(safeUrl, {
       method,
       signal: controller.signal,
       redirect: 'follow',

@@ -18,18 +18,19 @@ const PORT = process.env.PORT || 8080
 const corsOrigin = process.env.CORS_ORIGIN
 
 const allowedOrigins = corsOrigin ? corsOrigin.split(',').map((o) => o.trim()).filter(Boolean) : []
+const isLocalOrigin = (origin: string) => /^http:\/\/localhost(:\d+)?$/.test(origin) || /^https:\/\/localhost(:\d+)?$/.test(origin)
 
+app.disable('x-powered-by')
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.length === 0) return callback(null, true)
+    if (!origin) return callback(null, true)
     if (allowedOrigins.includes(origin)) return callback(null, true)
-    if (origin.endsWith('.vercel.app')) return callback(null, true)
-    if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) return callback(null, true)
-    callback(null, true)
+    if (process.env.NODE_ENV !== 'production' && isLocalOrigin(origin)) return callback(null, true)
+    callback(null, false)
   },
   credentials: true,
 }))
-app.use(express.json())
+app.use(express.json({ limit: '1mb' }))
 
 app.use('/api/auth', authRoutes)
 app.use('/api/teams', teamRoutes)

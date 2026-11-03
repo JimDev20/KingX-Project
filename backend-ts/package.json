@@ -19,6 +19,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^10.3.1",
     "pg": "^8.22.0"
   },
   "keywords": [],
@@ -30,6 +31,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.1.0",
+    "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.20.0",
     "prisma": "^7.8.0",
     "ts-node-dev": "^2.0.0",

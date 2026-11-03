@@ -119,10 +119,13 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
 export const changePassword = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId!
-    const { oldPassword, newPassword } = req.body
+    const currentPassword = typeof req.body.currentPassword === 'string'
+      ? req.body.currentPassword
+      : typeof req.body.oldPassword === 'string' ? req.body.oldPassword : ''
+    const newPassword = typeof req.body.newPassword === 'string' ? req.body.newPassword : ''
 
-    if (!oldPassword || !newPassword) {
-      res.status(400).json({ error: 'Old password and new password are required' })
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ error: 'Current password and new password are required' })
       return
     }
 
@@ -141,10 +144,10 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
       return
     }
 
-    const isValid = await bcrypt.compare(oldPassword, user.password)
+    const isValid = await bcrypt.compare(currentPassword, user.password)
 
     if (!isValid) {
-      res.status(401).json({ error: 'Old password is incorrect' })
+      res.status(401).json({ error: 'Current password is incorrect' })
       return
     }
 

@@ -96,12 +96,13 @@ export const createTeam = async (req: AuthRequest, res: Response): Promise<void>
   try {
     const name = typeof req.body.name === 'string' ? req.body.name.trim() : ''
 
-    if (!name) {
-      res.status(400).json({ error: 'Team name is required' })
+    if (!name || name.length > 100) {
+      res.status(400).json({ error: 'A team name of 100 characters or fewer is required' })
       return
     }
 
-    const baseSlug = slugify(req.body.slug || name)
+    const requestedSlug = typeof req.body.slug === 'string' ? req.body.slug : name
+    const baseSlug = slugify(requestedSlug)
     const slug = `${baseSlug}-${Date.now().toString(36)}`
 
     const team = await prisma.team.create({

@@ -1,23 +1,19 @@
 import { Response } from 'express'
 import prisma from '../config/prisma'
 import type { AuthRequest } from '../middleware/auth'
+import { websiteReadWhere, websiteWriteWhere } from '../utils/access'
 
-const websiteAccessWhere = (userId: string) => ({
-  OR: [
-    { userId },
-    {
-      team: {
-        members: { some: { userId } },
-      },
-    },
-  ],
-})
+const parseDate = (value: unknown): Date | null => {
+  if (typeof value !== 'string' && !(value instanceof Date)) return null
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
+}
 
 const ensureMaintenanceWindow = async (id: string, userId: string) => {
   return prisma.maintenanceWindow.findFirst({
     where: {
       id,
-      website: websiteAccessWhere(userId),
+      website: websiteWriteWhere(userId),
     },
     include: { website: { select: { name: true, url: true } } },
   })
@@ -30,7 +26,7 @@ export const list = async (req: AuthRequest, res: Response): Promise<void> => {
     const pageSize = Math.min(Math.max(Number(req.query.pageSize) || 20, 1), 100)
 
     const where = {
-      website: websiteAccessWhere(userId),
+      website: websiteReadWhere(userId),
     }
 
     const [items, total] = await Promise.all([
@@ -57,15 +53,18 @@ export const list = async (req: AuthRequest, res: Response): Promise<void> => {
 export const create = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId!
-    const { websiteId, label, startsAt, endsAt } = req.body
+    const websiteId = typeof req.body.websiteId === 'string' ? req.body.websiteId : ''
+    const label = typeof req.body.label === 'string' ? req.body.label.trim() : ''
+    const startsAt = parseDate(req.body.startsAt)
+    const endsAt = parseDate(req.body.endsAt)
 
-    if (!websiteId || !label || !startsAt || !endsAt) {
-      res.status(400).json({ error: 'websiteId, label, startsAt, and endsAt are required' })
+    if (!websiteId || !label || label.length > 120 || !startsAt || !endsAt || startsAt >= endsAt) {
+      res.status(400).json({ error: 'A website, label, and valid start/end times are required' })
       return
     }
 
     const website = await prisma.website.findFirst({
-      where: { id: websiteId, ...websiteAccessWhere(userId) },
+      where: { id: websiteId, ...websiteWriteWhere(userId) },
     })
 
     if (!website) {
@@ -77,8 +76,8 @@ export const create = async (req: AuthRequest, res: Response): Promise<void> => 
       data: {
         websiteId,
         label,
-        startsAt: new Date(startsAt),
-        endsAt: new Date(endsAt),
+        startsAt,
+        endsAt,
       },
       include: { website: { select: { name: true, url: true } } },
     })
@@ -99,12 +98,27 @@ export const update = async (req: AuthRequest, res: Response): Promise<void> => 
       return
     }
 
-    const data: Record<string, unknown> = {}
+    const startsAt = req.body.startsAt !== undefined ? parseDate(req.body.startsAt) : existing.startsAt
+    const endsAt = req.body.endsAt !== undefined ? parseDate(req.body.endsAt) : existing.endsAt
 
-    if (req.body.label !== undefined) data.label = req.body.label
-    if (req.body.startsAt !== undefined) data.startsAt = new Date(req.body.startsAt)
-    if (req.body.endsAt !== undefined) data.endsAt = new Date(req.body.endsAt)
-    if (req.body.isActive !== undefined) data.isActive = req.body.isActive
+    if (!startsAt || !endsAt || startsAt >= endsAt) {
+      res.status(400).json({ error: 'A valid start time before the end time is required' })
+      return
+    }
+
+    const data: { label?: string; startsAt?: Date; endsAt?: Date; isActive?: boolean } = {}
+
+    if (req.body.label !== undefined) {
+      const label = typeof req.body.label === 'string' ? req.body.label.trim() : ''
+      if (!label || label.length > 120) {
+        res.status(400).json({ error: 'A label of 120 characters or fewer is required' })
+        return
+      }
+      data.label = label
+    }
+    data.startsAt = startsAt
+    data.endsAt = endsAt
+    if (typeof req.body.isActive === 'boolean') data.isActive = req.body.isActive
 
     const maintenanceWindow = await prisma.maintenanceWindow.update({
       where: { id: existing.id },

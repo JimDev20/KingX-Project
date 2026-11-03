@@ -1,13 +1,53 @@
+# Dependencies and local runtimes
 node_modules/
-.env
-.env.local
-.env.production
 venv/
 __pycache__/
-*.log
+
+# Environment files and credentials
+.env
+.env.*
+!.env.example
+*.env
+!*.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.csr
+*.jks
+*.keystore
+secrets/
+.npmrc
+.pypirc
+.htpasswd
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+
+# Local documentation
+docs/
+
+# Build, test, and tool artifacts
 dist/
 build/
-.DS_Store
 .next/
-docs/
+out/
+coverage/
+playwright-report/
+test-results/
+blob-report/
+*.tsbuildinfo
+frontend-next/tests/e2e/screenshots/
+*.log
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.vercel/
+
+# Backend migration scratch
 backend-ts/prisma/migrate-from-mongo.ts

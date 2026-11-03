@@ -1,6 +1,9 @@
 import { Response } from 'express'
+import { UserRole } from '@prisma/client'
 import prisma from '../config/prisma'
 import type { AuthRequest } from '../middleware/auth'
+
+const VALID_ROLES: UserRole[] = ['USER', 'ADMIN', 'SUPERADMIN']
 
 export const getDashboard = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -54,10 +57,9 @@ export const listUsers = async (req: AuthRequest, res: Response): Promise<void> 
 
 export const updateUserRole = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { role } = req.body
-    const validRoles = ['user', 'admin', 'superadmin']
+    const role = req.body.role as UserRole
 
-    if (!validRoles.includes(role)) {
+    if (!VALID_ROLES.includes(role)) {
       res.status(400).json({ error: 'Invalid role' })
       return
     }
@@ -67,6 +69,14 @@ export const updateUserRole = async (req: AuthRequest, res: Response): Promise<v
     if (!user) {
       res.status(404).json({ error: 'User not found' })
       return
+    }
+
+    if (user.role === 'SUPERADMIN' && role !== 'SUPERADMIN') {
+      const superadminCount = await prisma.user.count({ where: { role: 'SUPERADMIN' } })
+      if (superadminCount <= 1) {
+        res.status(400).json({ error: 'At least one superadmin is required' })
+        return
+      }
     }
 
     const updated = await prisma.user.update({

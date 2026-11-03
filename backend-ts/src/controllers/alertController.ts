@@ -1,6 +1,8 @@
 import { Response } from 'express'
+import { AlertType } from '@prisma/client'
 import prisma from '../config/prisma'
 import type { AuthRequest } from '../middleware/auth'
+import { websiteReadWhere, websiteWriteWhere } from '../utils/access'
 
 export const listAlerts = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -58,12 +60,38 @@ export const getAlert = async (req: AuthRequest, res: Response): Promise<void> =
   }
 }
 
+const ALERT_TYPES: AlertType[] = ['EMAIL', 'SMS', 'SLACK', 'DISCORD', 'TELEGRAM']
+const MAX_RECIPIENTS = 10
+const MAX_THRESHOLD = 100
+
+const parseAlertType = (value: unknown): AlertType | null => {
+  return typeof value === 'string' && ALERT_TYPES.includes(value as AlertType) ? value as AlertType : null
+}
+
+const parseRecipients = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, MAX_RECIPIENTS)
+}
+
+const parseThreshold = (value: unknown): number => {
+  const threshold = Number(value)
+  if (!Number.isFinite(threshold)) return 1
+  return Math.min(Math.max(Math.floor(threshold), 1), MAX_THRESHOLD)
+}
+
 export const listAlertRules = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const websiteId = req.query.websiteId as string | undefined
-    const where = websiteId
-      ? { website: { userId: req.userId!, id: websiteId } }
-      : { website: { userId: req.userId! } }
+    const websiteId = typeof req.query.websiteId === 'string' ? req.query.websiteId : undefined
+    const where = {
+      website: {
+        ...websiteReadWhere(req.userId!),
+        ...(websiteId ? { id: websiteId } : {}),
+      },
+    }
 
     const rules = await prisma.alertRule.findMany({
       where,
@@ -81,15 +109,18 @@ export const listAlertRules = async (req: AuthRequest, res: Response): Promise<v
 export const createAlertRule = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId!
-    const { websiteId, type, target, condition } = req.body
+    const websiteId = typeof req.body.websiteId === 'string' ? req.body.websiteId : ''
+    const type = parseAlertType(req.body.type)
+    const recipients = parseRecipients(req.body.recipients)
+    const threshold = parseThreshold(req.body.threshold)
 
-    if (!websiteId || !type) {
-      res.status(400).json({ error: 'websiteId and type are required' })
+    if (!websiteId || !type || recipients.length === 0) {
+      res.status(400).json({ error: 'websiteId, a valid type, and at least one recipient are required' })
       return
     }
 
     const website = await prisma.website.findFirst({
-      where: { id: websiteId, userId },
+      where: { id: websiteId, ...websiteWriteWhere(userId) },
     })
 
     if (!website) {
@@ -99,12 +130,11 @@ export const createAlertRule = async (req: AuthRequest, res: Response): Promise<
 
     const rule = await prisma.alertRule.create({
       data: {
-        websiteId,
-        userId,
+        websiteId: website.id,
         type,
-        target: typeof target === 'string' ? target : '',
-        condition: typeof condition === 'string' ? condition : undefined,
-        enabled: true,
+        recipients,
+        threshold,
+        isEnabled: true,
       },
       include: { website: { select: { name: true, url: true } } },
     })
@@ -119,7 +149,7 @@ export const createAlertRule = async (req: AuthRequest, res: Response): Promise<
 export const updateAlertRule = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const existing = await prisma.alertRule.findFirst({
-      where: { id: req.params.id as string, website: { userId: req.userId! } },
+      where: { id: req.params.id as string, website: websiteWriteWhere(req.userId!) },
     })
 
     if (!existing) {
@@ -127,12 +157,26 @@ export const updateAlertRule = async (req: AuthRequest, res: Response): Promise<
       return
     }
 
-    const data: Record<string, unknown> = {}
+    const data: { type?: AlertType; recipients?: string[]; threshold?: number; isEnabled?: boolean } = {}
 
-    if (req.body.type !== undefined) data.type = req.body.type
-    if (req.body.target !== undefined) data.target = req.body.target
-    if (req.body.enabled !== undefined) data.enabled = req.body.enabled
-    if (req.body.condition !== undefined) data.condition = req.body.condition
+    if (req.body.type !== undefined) {
+      const type = parseAlertType(req.body.type)
+      if (!type) {
+        res.status(400).json({ error: 'Invalid alert type' })
+        return
+      }
+      data.type = type
+    }
+    if (req.body.recipients !== undefined) {
+      const recipients = parseRecipients(req.body.recipients)
+      if (recipients.length === 0) {
+        res.status(400).json({ error: 'At least one recipient is required' })
+        return
+      }
+      data.recipients = recipients
+    }
+    if (req.body.threshold !== undefined) data.threshold = parseThreshold(req.body.threshold)
+    if (typeof req.body.isEnabled === 'boolean') data.isEnabled = req.body.isEnabled
 
     const rule = await prisma.alertRule.update({
       where: { id: existing.id },
@@ -150,7 +194,7 @@ export const updateAlertRule = async (req: AuthRequest, res: Response): Promise<
 export const deleteAlertRule = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const existing = await prisma.alertRule.findFirst({
-      where: { id: req.params.id as string, website: { userId: req.userId! } },
+      where: { id: req.params.id as string, website: websiteWriteWhere(req.userId!) },
     })
 
     if (!existing) {

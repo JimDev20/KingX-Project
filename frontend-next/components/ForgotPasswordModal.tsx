@@ -72,7 +72,7 @@ export default function ForgotPasswordModal({ onClose, onSwitchToLogin }: Props)
       const r = await fetch(`${API}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ token, newPassword: password }),
       })
       const d = await r.json()
       if (!r.ok) throw new Error(d.error || 'Failed')

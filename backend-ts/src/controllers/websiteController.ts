@@ -1,23 +1,13 @@
 import { Response } from 'express'
-import { CheckMethod, WebsiteStatus, Prisma } from '@prisma/client'
+import { CheckMethod, KeywordCheckType, WebsiteStatus, Prisma } from '@prisma/client'
 import prisma from '../config/prisma'
 import { AuthRequest } from '../middleware/auth'
 import { checkWebsite } from '../services/monitorService'
+import { websiteReadWhere as websiteAccessWhere, websiteWriteWhere } from '../utils/access'
+import { normalizeMonitorUrl } from '../utils/url'
 
 const DEFAULT_PAGE_SIZE = 10
 const MAX_PAGE_SIZE = 50
-
-const normalizeUrl = (value: unknown): string | null => {
-  if (typeof value !== 'string') return null
-
-  try {
-    const url = new URL(value.trim())
-    if (!['http:', 'https:'].includes(url.protocol)) return null
-    return url.toString()
-  } catch {
-    return null
-  }
-}
 
 const parseMethod = (value: unknown): CheckMethod => {
   if (value === 'POST' || value === 'HEAD') return value as CheckMethod
@@ -34,6 +24,28 @@ const parseTags = (value: unknown): string[] => {
     .slice(0, 10)
 }
 
+const parseKeywordCheck = (value: unknown): string | null => {
+  if (typeof value !== 'string') return null
+  return value.trim().slice(0, 200) || null
+}
+
+const parseKeywordType = (value: unknown): KeywordCheckType | null => {
+  if (value === 'CONTAINS' || value === 'NOT_CONTAINS') return value as KeywordCheckType
+  return null
+}
+
+const parseCheckInterval = (value: unknown): number => {
+  const interval = Number(value)
+  if (!Number.isFinite(interval)) return 300
+  return Math.min(Math.max(Math.floor(interval), 60), 86400)
+}
+
+const parseTimeout = (value: unknown): number => {
+  const timeout = Number(value)
+  if (!Number.isFinite(timeout)) return 10000
+  return Math.min(Math.max(Math.floor(timeout), 1000), 60000)
+}
+
 const getRouteId = (value: string | string[] | undefined): string => {
   return Array.isArray(value) ? value[0] : value || ''
 }
@@ -48,26 +60,20 @@ const calculateUptime = async (websiteId: string): Promise<number> => {
   return Number(((up / total) * 100).toFixed(2))
 }
 
-const websiteAccessWhere = (userId: string): Prisma.WebsiteWhereInput => ({
-  OR: [
-    { userId },
-    {
-      team: {
-        members: {
-          some: {
-            userId,
-          },
-        },
-      },
-    },
-  ],
-})
-
 const ensureWebsite = async (websiteId: string, userId: string) => {
   return prisma.website.findFirst({
     where: {
       id: websiteId,
       ...websiteAccessWhere(userId),
+    },
+  })
+}
+
+const ensureWebsiteWrite = async (websiteId: string, userId: string) => {
+  return prisma.website.findFirst({
+    where: {
+      id: websiteId,
+      ...websiteWriteWhere(userId),
     },
   })
 }
@@ -123,11 +129,11 @@ export const listWebsites = async (req: AuthRequest, res: Response): Promise<voi
 export const createWebsite = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId!
-    const url = normalizeUrl(req.body.url)
+    const url = normalizeMonitorUrl(req.body.url)
     const name = typeof req.body.name === 'string' ? req.body.name.trim() : ''
 
-    if (!name || !url) {
-      res.status(400).json({ error: 'Name and a valid http/https URL are required' })
+    if (!name || name.length > 100 || !url) {
+      res.status(400).json({ error: 'A name of 100 characters or fewer and a valid public http/https URL are required' })
       return
     }
 
@@ -143,11 +149,13 @@ export const createWebsite = async (req: AuthRequest, res: Response): Promise<vo
         },
       })
 
-      if (!membership) {
-        res.status(403).json({ error: 'You must be a team member to add shared websites' })
+      if (!membership || membership.role === 'VIEWER') {
+        res.status(403).json({ error: 'You must be a team owner, admin, or member to add shared websites' })
         return
       }
     }
+
+    const keywordCheck = parseKeywordCheck(req.body.keywordCheck)
 
     const website = await prisma.website.create({
       data: {
@@ -156,11 +164,11 @@ export const createWebsite = async (req: AuthRequest, res: Response): Promise<vo
         name,
         url,
         method: parseMethod(req.body.method),
-        checkInterval: Math.max(Number(req.body.checkInterval) || 300, 60),
-        timeout: Math.max(Number(req.body.timeout) || 10000, 1000),
+        checkInterval: parseCheckInterval(req.body.checkInterval),
+        timeout: parseTimeout(req.body.timeout),
         tags: parseTags(req.body.tags),
-        keywordCheck: req.body.keywordCheck || null,
-        keywordType: req.body.keywordType || null,
+        keywordCheck,
+        keywordType: keywordCheck ? parseKeywordType(req.body.keywordType) ?? 'CONTAINS' : null,
       },
     })
 
@@ -189,7 +197,7 @@ export const getWebsite = async (req: AuthRequest, res: Response): Promise<void>
 
 export const updateWebsite = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const existing = await ensureWebsite(getRouteId(req.params.id), req.userId!)
+    const existing = await ensureWebsiteWrite(getRouteId(req.params.id), req.userId!)
 
     if (!existing) {
       res.status(404).json({ error: 'Website not found' })
@@ -198,21 +206,37 @@ export const updateWebsite = async (req: AuthRequest, res: Response): Promise<vo
 
     const data: Prisma.WebsiteUpdateInput = {}
 
-    if (typeof req.body.name === 'string' && req.body.name.trim()) data.name = req.body.name.trim()
+    if (typeof req.body.name === 'string' && req.body.name.trim()) {
+      if (req.body.name.trim().length > 100) {
+        res.status(400).json({ error: 'Name must be 100 characters or fewer' })
+        return
+      }
+      data.name = req.body.name.trim()
+    }
     if (req.body.url !== undefined) {
-      const url = normalizeUrl(req.body.url)
+      const url = normalizeMonitorUrl(req.body.url)
       if (!url) {
-        res.status(400).json({ error: 'A valid http/https URL is required' })
+        res.status(400).json({ error: 'A valid public http/https URL is required' })
         return
       }
       data.url = url
     }
     if (req.body.method !== undefined) data.method = parseMethod(req.body.method)
-    if (req.body.checkInterval !== undefined) data.checkInterval = Math.max(Number(req.body.checkInterval) || 300, 60)
-    if (req.body.timeout !== undefined) data.timeout = Math.max(Number(req.body.timeout) || 10000, 1000)
+    if (req.body.checkInterval !== undefined) data.checkInterval = parseCheckInterval(req.body.checkInterval)
+    if (req.body.timeout !== undefined) data.timeout = parseTimeout(req.body.timeout)
     if (req.body.tags !== undefined) data.tags = parseTags(req.body.tags)
-    if (req.body.keywordCheck !== undefined) data.keywordCheck = req.body.keywordCheck || null
-    if (req.body.keywordType !== undefined) data.keywordType = req.body.keywordType || null
+    if (req.body.keywordCheck !== undefined) {
+      data.keywordCheck = parseKeywordCheck(req.body.keywordCheck)
+      if (!data.keywordCheck) data.keywordType = null
+    }
+    if (req.body.keywordType !== undefined) {
+      const keywordType = parseKeywordType(req.body.keywordType)
+      if (req.body.keywordType && !keywordType) {
+        res.status(400).json({ error: 'Invalid keyword type' })
+        return
+      }
+      data.keywordType = keywordType
+    }
 
     const website = await prisma.website.update({
       where: { id: existing.id },
@@ -228,7 +252,7 @@ export const updateWebsite = async (req: AuthRequest, res: Response): Promise<vo
 
 export const deleteWebsite = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const existing = await ensureWebsite(getRouteId(req.params.id), req.userId!)
+    const existing = await ensureWebsiteWrite(getRouteId(req.params.id), req.userId!)
 
     if (!existing) {
       res.status(404).json({ error: 'Website not found' })
@@ -245,7 +269,7 @@ export const deleteWebsite = async (req: AuthRequest, res: Response): Promise<vo
 
 export const runWebsiteCheck = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const existing = await ensureWebsite(getRouteId(req.params.id), req.userId!)
+    const existing = await ensureWebsiteWrite(getRouteId(req.params.id), req.userId!)
 
     if (!existing) {
       res.status(404).json({ error: 'Website not found' })

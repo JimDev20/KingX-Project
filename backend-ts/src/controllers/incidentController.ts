@@ -1,17 +1,7 @@
 import { Response } from 'express'
 import prisma from '../config/prisma'
 import type { AuthRequest } from '../middleware/auth'
-
-const websiteAccessWhere = (userId: string) => ({
-  OR: [
-    { userId },
-    {
-      team: {
-        members: { some: { userId } },
-      },
-    },
-  ],
-})
+import { websiteReadWhere, websiteWriteWhere } from '../utils/access'
 
 export const list = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -20,7 +10,7 @@ export const list = async (req: AuthRequest, res: Response): Promise<void> => {
     const pageSize = Math.min(Math.max(Number(req.query.pageSize) || 20, 1), 100)
 
     const where = {
-      website: websiteAccessWhere(userId),
+      website: websiteReadWhere(userId),
     }
 
     const [items, total] = await Promise.all([
@@ -49,7 +39,7 @@ export const get = async (req: AuthRequest, res: Response): Promise<void> => {
     const incident = await prisma.incident.findFirst({
       where: {
         id: req.params.id as string,
-        website: websiteAccessWhere(req.userId!),
+        website: websiteReadWhere(req.userId!),
       },
       include: { website: { select: { name: true, url: true } } },
     })
@@ -71,7 +61,7 @@ export const resolve = async (req: AuthRequest, res: Response): Promise<void> =>
     const incident = await prisma.incident.findFirst({
       where: {
         id: req.params.id as string,
-        website: websiteAccessWhere(req.userId!),
+        website: websiteWriteWhere(req.userId!),
       },
     })
 
@@ -106,7 +96,7 @@ export const addUpdate = async (req: AuthRequest, res: Response): Promise<void> 
     const incident = await prisma.incident.findFirst({
       where: {
         id: req.params.id as string,
-        website: websiteAccessWhere(req.userId!),
+        website: websiteWriteWhere(req.userId!),
       },
     })
 
@@ -142,7 +132,7 @@ export const getUpdates = async (req: AuthRequest, res: Response): Promise<void>
     const incident = await prisma.incident.findFirst({
       where: {
         id: req.params.id as string,
-        website: websiteAccessWhere(req.userId!),
+        website: websiteReadWhere(req.userId!),
       },
     })
 
